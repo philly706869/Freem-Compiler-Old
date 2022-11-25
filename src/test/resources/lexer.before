@@ -1,4 +1,17 @@
-/*
+
+val peek get() = sourceCode[current]
+val stringAt get() = sourceCode.substring(start until current)
+
+fun toStringArray(charArray: CharArray) = charArray.map { it.toString() }.toTypedArray()
+fun find(vararg target: String) = if (!isEnd) target.find { sourceCode.substring(current).startsWith(it) } else null
+fun match(vararg target: String) = find(*target) != null
+fun matchAdvance(vararg target: String) = if (match(*target)) { advance(find(*target)!!.length);true } else false
+fun find(vararg target: Char) = find(*toStringArray(target))
+fun match(vararg target: Char) = match(*toStringArray(target))
+fun matchAdvance(vararg target: Char) = matchAdvance(*toStringArray(target))
+
+fun whileAdvance(condition: () -> Boolean) { while (!isEnd && condition()) advance() }
+
 when {
     matchAdvance('\n') -> line++
     peek.isWhitespace() -> whileAdvance { peek.isWhitespace() }
@@ -53,4 +66,3 @@ when {
         }
     }
 }
-*/

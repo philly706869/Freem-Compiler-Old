@@ -7,7 +7,6 @@ comment test2
 
 */
 
-/*
 import {
     freem.util.*
 }
@@ -33,4 +32,3 @@ main {
 function fc() {
 
 }
-*/

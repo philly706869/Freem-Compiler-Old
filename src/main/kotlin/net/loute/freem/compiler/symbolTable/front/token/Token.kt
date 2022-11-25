@@ -5,6 +5,7 @@ class Token(val type: TokenType, val lexeme: String) {
     enum class Type: TokenType {
         IDENTIFIER,
         LITERAL,
+        LINEBREAK,
         ;
         enum class Operator(val value: String): TokenType {
             EQUAL            ( value = "="  ),
