@@ -1,5 +1,4 @@
 
-val peek get() = sourceCode[current]
 val stringAt get() = sourceCode.substring(start until current)
 
 fun toStringArray(charArray: CharArray) = charArray.map { it.toString() }.toTypedArray()
