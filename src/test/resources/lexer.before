@@ -1,0 +1,56 @@
+/*
+when {
+    matchAdvance('\n') -> line++
+    peek.isWhitespace() -> whileAdvance { peek.isWhitespace() }
+    peek.toString().matches(Regex("[a-zA-Z_]")) -> {
+        whileAdvance { peek.toString().matches(Regex("[a-zA-Z0-9_]")) }
+        addToken(Token.Type.Keyword.table[stringAt]?: Token.Type.IDENTIFIER)
+    }
+    else -> {
+        mapOf(
+            *Token.Type.Operator.table.toList().toTypedArray(),
+            "\n" to { line++ },
+            "//" to { whileAdvance { !match('\n') } },
+            "/*" to { whileAdvance { if (match('\n')) line++;!matchAdvance("*/") } },
+            "'" to {
+                advance();matchAdvance('\\');advance()
+                if (matchAdvance('\'')) addToken(Token.Type.LITERAL)
+                else raiseCompileError("Incorrect character literal(line:$line)")
+            },
+            "\"" to {
+                advance()
+                if (matchAdvance('"') && matchAdvance('"')) {
+                    /*while (!match('"') && !isEnd) {
+                        matchAdvance('\\')
+                        advance()
+                    }*/
+                    // late
+                } else {
+                    while (!match('"')) {
+                        if (match('\n') || isEnd) raiseCompileError("Incorrect string literal(line:$line)")
+                        matchAdvance('\\')
+                        advance()
+                    }
+                    if (matchAdvance('"')) addToken(Token.Type.LITERAL)
+                    else raiseCompileError("Incorrect string literal(line:$line)")
+                }
+            }
+        ).filter { sourceCode.substring(start until min(start + it.key.length, sourceCode.length)) == it.key }.run {
+            if (!isEmpty()) {
+                toList().sortedWith(compareBy { it.first.length }).last().run {
+                    second.run {
+                        when (this) {
+                            is Token.Type.Operator -> {
+                                current = start + first.length
+                                addToken(this)
+                            }
+                            is Function0<*> -> this()
+                            else -> {}
+                        }
+                    }
+                }
+            } else raiseCompileError("Unexpected token: $peek(line:$line)")
+        }
+    }
+}
+*/
