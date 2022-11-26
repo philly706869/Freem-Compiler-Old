@@ -11,32 +11,8 @@ import net.loute.freem.compiler.util.readFile
 import java.io.File
 
 object FreemCompiler {
-    class FreemCode(val content: String)
-    fun compile(freemCode: FreemCode) =
-        Assembler.generateMachineLanguage(
-            Optimizer.optimize(
-                CodeGenerator.generateCode(
-                    IntermediateRepresentationGenerator.generateIntermediateRepresentation(
-                        SemanticAnalyzer.semanticAnalyse(
-                            Parser.parseAnalyse(
-                                Lexer.lexicalAnalyse(
-                                    freemCode
-                                ).onEach {
-                                    println(
-                                        """
-                                        {
-                                            type: ${it.type},
-                                            lexeme: "${it.lexeme}",
-                                        },
-                                        """.trimIndent()
-                                    )
-                                }
-                            )
-                        )
-                    )
-                )
-            )
-        )
+    class FreemCode(private val content: String) { operator fun invoke() = content }
+    fun compile(freemCode: FreemCode) = Assembler(Optimizer(CodeGenerator(IntermediateRepresentationGenerator(SemanticAnalyzer(Parser(Lexer(freemCode)))))))
     fun compile(file: File) { compile(FreemCode(readFile(file))) }
     fun compile(pathName: String) { compile(File(pathName)) }
 }

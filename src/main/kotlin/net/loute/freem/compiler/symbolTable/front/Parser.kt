@@ -9,7 +9,18 @@ import java.util.*
 
 object Parser {
     class SyntaxTree: ArrayList<Token>()
-    fun parseAnalyse(tokenArray: Lexer.TokenArray) = SyntaxTree().apply {
+    operator fun invoke(tokenArray: Lexer.TokenArray) = SyntaxTree().apply {
+        tokenArray.onEach {
+            println(
+                """
+                {
+                    type: ${it.type},
+                    lexeme: "${it.lexeme}",
+                },
+                """.trimIndent()
+            )
+        }
+
         tokenArray.forEach {
             when (it.type) {
                 Token.Type.IDENTIFIER, Token.Type.LITERAL -> {

@@ -8,8 +8,8 @@ import net.loute.freem.compiler.util.safe
 object Lexer {
     class TokenArray: ArrayList<Token>()
 
-    private val skipRegex = "^(\\s+|\\/\\/.*|\\/\\*(.|\\n)*\\*\\/)".toRegex()
-    private val normalRegex = "^([a-zA-Z_][0-9a-zA-Z_]*|${
+    private val skipRegex = "^(\\s+|//.*|/\\*(.|\\n)*\\*/)".toRegex()
+    private val normalRegex = "^([a-zA-Z_][a-zA-Z\\d_]*|${
         run {
             Token.Type.Operator.table.map {
                 it.key.map { string -> "\\" + string }.joinToString("")
@@ -17,11 +17,11 @@ object Lexer {
         }
     })".toRegex()
     private val literalRegex =
-        "^(\\/(\\\\.|[^\\/\\\\])*\\/g?m?i?|'(\\\\.|[^\\\\])'|\"\"\"(\\\\[\\s\\S]|[^\"\\\\])*\"\"\"|\"(\\\\.|[^\"\\\\])*\"|\\d+(u|U)?(b|B|s|S|l|L|f|F)?|\\d*\\.\\d+(u|U)?(f|F)?)"
+        "^(/(\\\\.|[^/\\\\])+/[igmuys]*|'(\\\\.|[^\\\\])'|\"\"\"(\\\\[\\s\\S]|[^\"\\\\])*\"\"\"|\"(\\\\.|[^\"\\\\])*\"|(\\d*\\.\\d+|\\d+\\.\\d*)[uU]?[fF]?|\\d+[uU]?[bBsSlLfF]?)"
             .toRegex()
 
-    fun lexicalAnalyse(freemCode: FreemCompiler.FreemCode) = TokenArray().apply {
-        val sourceCode = freemCode.content
+    operator fun invoke(freemCode: FreemCompiler.FreemCode) = TokenArray().apply {
+        val sourceCode = freemCode()
         var start = 0
         var current = 0
         var line = 1
@@ -44,6 +44,7 @@ object Lexer {
             },
             { literalRegex.find(stringSince()).safe { advance(value.length); addToken(Token.Type.LITERAL) } }
         )
+
         while (current < sourceCode.length) {
             start = current
             if (!process.any { it() }) {
