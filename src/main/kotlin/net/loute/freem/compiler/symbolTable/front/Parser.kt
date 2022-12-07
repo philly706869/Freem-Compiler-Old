@@ -1,61 +1,62 @@
 package net.loute.freem.compiler.symbolTable.front
 
+import net.loute.freem.compiler.FreemCompiler
 import net.loute.freem.compiler.symbolTable.front.token.Token
-import net.loute.freem.compiler.symbolTable.front.token.table.operator.getRank
+import net.loute.freem.compiler.symbolTable.front.token.getRank
 import net.loute.freem.compiler.symbolTable.raiseCompileError
 import java.util.*
+import kotlin.collections.ArrayList
 
 //fun String.trimEdge() = substring(1 until length - 1)
 
 object Parser {
-    class SyntaxTree: ArrayList<Token>()
-    operator fun invoke(tokenArray: Lexer.TokenArray) = SyntaxTree().apply {
-        tokenArray.onEach {
-            println(
-                """
-                {
-                    type: ${it.type},
-                    lexeme: "${it.lexeme}",
-                },
-                """.trimIndent()
-            )
-        }
+    class SyntaxTree
+    fun parseAnalyse(tokenArray: Collection<Token>) = SyntaxTree().apply {
 
-        tokenArray.forEach {
-            when (it.type) {
-                Token.Type.IDENTIFIER, Token.Type.LITERAL -> {
-
-                }
-            }
-        }
     }
-    private class Statement {
-        val output = Lexer.TokenArray()
-        val operatorStack = Lexer.TokenArray()
-        fun push(token: Token) {
-            if (token.type is Token.Type.Operator) {
-                if (token.type == Token.Type.Operator.RIGHT_PAREN) popUntilLeftParen()
-                else if(token.type != Token.Type.Operator.LEFT_PAREN) pop(token.type.getRank())
-                operatorStack.add(token)
-            }
-        }
-        fun pop(num: Int) {
-            var topRank = 0
-            val isCombineRight = num != 1
-            while (!operatorStack.isEmpty()) {
-                topRank = operatorStack.last().type.run { if (this is Token.Type.Operator) getRank() else 0 }
-                if (isCombineRight) { if (topRank <= num) { output.add(operatorStack.last()); popBack() } }
-                else if (topRank < num) { output.add(operatorStack.last()); popBack() } else break
-            }
-        }
-        fun popBack() { operatorStack.run { removeAt(lastIndex) } }
-        fun popUntilLeftParen() {
-            while (!operatorStack.isEmpty()) {
-                if (operatorStack.last().type != Token.Type.Operator.LEFT_PAREN) { output.add(operatorStack.last()); popBack() } else { popBack(); return } }
-            raiseCompileError("cannot find '('")
-        }
 
-        fun express() {} //식 분석 함수
-        fun factor() {} //피연산자, 괄호 등 분석 함수
+    fun shuntingYardWith(tokens: FreemCompiler.TokenArray): FreemCompiler.TokenArray {
+        val output = FreemCompiler.TokenArray()
+        val operatorStack = Stack<Token.Operator>()
+
+        tokens.forEach {
+            when (it) {
+                is Token.PolymorphicToken -> output.add(it)
+                Token.Operator.LEFT_PAREN -> operatorStack.add(it as Token.Operator)
+                Token.Operator.RIGHT_PAREN -> {
+                    try {
+                        while (true) {
+                            val pop = operatorStack.pop()
+                            if (pop == Token.Operator.LEFT_PAREN) break
+                            output.add(pop)
+                        }
+                    } catch (_: EmptyStackException) {
+                        raiseCompileError("paren does not match") // modify error message later
+                    }
+                }
+                is Token.Operator -> {
+                    val operatorRank = it.getRank()
+                    val condition: () -> Boolean =
+                        when (it.combineDirection) {
+                            Token.Operator.CombineDirection.LEFT -> { { operatorStack.last().getRank() <= operatorRank } }
+                            Token.Operator.CombineDirection.RIGHT -> { { operatorStack.last().getRank() < operatorRank } }
+                        }
+
+                    while (operatorStack.isNotEmpty()) {
+                        if (condition()) output.add(operatorStack.pop())
+                        else break
+                    }
+                    operatorStack.push(it)
+                }
+                else -> println(it)
+            }
+        }
+        while (!operatorStack.isEmpty()) {
+            when (val pop = operatorStack.pop()) {
+                Token.Operator.LEFT_PAREN, Token.Operator.RIGHT_PAREN -> raiseCompileError("paren does not match") // modify error message later
+                else -> output.add(pop)
+            }
+        }
+        return output
     }
 }

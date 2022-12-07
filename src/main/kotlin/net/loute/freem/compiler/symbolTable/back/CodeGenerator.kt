@@ -4,7 +4,7 @@ import net.loute.freem.compiler.symbolTable.front.IntermediateRepresentationGene
 
 object CodeGenerator {
     class AssemblyLanguage
-    operator fun invoke(intermediateRepresentation: IntermediateRepresentationGenerator.IntermediateRepresentation) = AssemblyLanguage().apply {
+    fun generateCode(intermediateRepresentation: IntermediateRepresentationGenerator.IntermediateRepresentation) = AssemblyLanguage().apply {
 
     }
 }

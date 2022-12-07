@@ -1,12 +1,13 @@
 // example code
 
 /* comment test1 */
-/* 
+/*
 
-comment test2
+   comment test2
 
 */
 
+/*
 import {
     freem.util.*
 }
@@ -32,3 +33,8 @@ main {
 function fc() {
 
 }
+*/
+
+// ^ -> **
+
+Aiden+b*(c**aiDen-aidEn)**(f+g*h)-aIden

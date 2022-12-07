@@ -7,13 +7,41 @@ import net.loute.freem.compiler.symbolTable.front.IntermediateRepresentationGene
 import net.loute.freem.compiler.symbolTable.front.Lexer
 import net.loute.freem.compiler.symbolTable.front.Parser
 import net.loute.freem.compiler.symbolTable.front.SemanticAnalyzer
-import net.loute.freem.compiler.util.readFile
+import net.loute.freem.compiler.symbolTable.front.token.Token
+import net.loute.freem.compiler.util.pipe
 import java.io.File
+import java.nio.charset.Charset
 
 object FreemCompiler {
-    class FreemCode(private val content: String) { operator fun invoke() = content }
-    fun compile(freemCode: FreemCode) = Assembler(Optimizer(CodeGenerator(IntermediateRepresentationGenerator(SemanticAnalyzer(Parser(Lexer(freemCode)))))))
-    fun compile(file: File) { compile(FreemCode(readFile(file))) }
-    fun compile(pathName: String) { compile(File(pathName)) }
+    class TokenArray: ArrayList<Token>()
+
+    fun compile(code: String) =
+        code.pipe(Lexer::lexicalAnalyse).onEach {
+            println(
+                when (it) {
+                    is Token.PolymorphicToken -> {
+                        """
+                        {
+                            type: ${it},
+                            lexeme: "${it.lexeme}",
+                        },
+                        """.trimIndent()
+                    }
+                    else -> {
+                        """
+                        { type: $it },
+                        """.trimIndent()
+                    }
+                }
+
+            )
+        }
+            .pipe(Parser::parseAnalyse)
+            .pipe(SemanticAnalyzer::semanticAnalyse)
+            .pipe(IntermediateRepresentationGenerator::generateIntermediateRepresentation)
+            .pipe(CodeGenerator::generateCode)
+            .pipe(Optimizer::optimize)
+            .pipe(Assembler::generateMachineLanguage)
+    fun compile(file: File, charset: Charset = Charsets.UTF_8) { compile(file.readText(charset)) }
 }
 
