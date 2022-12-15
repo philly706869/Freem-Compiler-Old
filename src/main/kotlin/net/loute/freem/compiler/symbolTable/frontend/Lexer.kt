@@ -1,8 +1,8 @@
-package net.loute.freem.compiler.symbolTable.front
+package net.loute.freem.compiler.symbolTable.frontend
 
 import net.loute.freem.compiler.FreemCompiler
-import net.loute.freem.compiler.symbolTable.front.token.Token
-import net.loute.freem.compiler.symbolTable.raiseCompileError
+import net.loute.freem.compiler.symbolTable.frontend.token.Token
+import net.loute.freem.compiler.symbolTable.throwCompileError
 import net.loute.freem.compiler.util.safe
 
 object Lexer {
@@ -21,15 +21,12 @@ object Lexer {
 
     fun lexicalAnalyse(code: String): FreemCompiler.TokenArray {
         val tokenArray = FreemCompiler.TokenArray()
-        var start = 0
-        var current = 0
+        var index = 0
         var line = 1
 
-        fun stringAt() = code.substring(start until current)
-
         infix fun Regex.process(block: MatchResult.() -> Unit) =
-            find(code.substring(start)).safe {
-                current += value.length
+            find(code.substring(index)).safe {
+                index += value.length
                 block()
             }
         val processorInterface = arrayOf<() -> Boolean>(
@@ -41,19 +38,18 @@ object Lexer {
                     }
                 }
             },
-            { stringRegex process { tokenArray.add(Token.Keyword.table[value]?:Token.IDENTIFIER(stringAt())) } },
+            { stringRegex process { tokenArray.add(Token.Keyword.table[value]?:Token.IDENTIFIER(value)) } },
             { operatorRegex process { tokenArray.add(Token.Operator.table[value]!!) } },
-            { literalRegex process { tokenArray.add(Token.LITERAL(stringAt())) } }
+            { literalRegex process { tokenArray.add(Token.LITERAL(value)) } }
         )
 
-        while (current < code.length) {
-            start = current
-            if (!processorInterface.any { it() }) {
-                val column = ".+\$".toRegex().find(code.substring(0..current))!!.value.length
-                raiseCompileError("Unexpected token ${code[current]}(${line}:${column})")
-            }
+        while (index < code.length) {
+            if (!processorInterface.any { it() })
+                throwCompileError {
+                    val column = ".+\$".toRegex().find(code.substring(0..index))!!.value.length
+                    "Unexpected token ${code[index]}(${line}:${column})"
+                }
         }
-
         return tokenArray
     }
 }

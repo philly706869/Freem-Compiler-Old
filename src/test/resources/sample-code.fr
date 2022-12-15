@@ -7,7 +7,6 @@
 
 */
 
-/*
 import {
     freem.util.*
 }
@@ -33,8 +32,6 @@ main {
 function fc() {
 
 }
-*/
 
-// ^ -> **
+1 + 2 ** 3
 
-Aiden+b*(c**aiDen-aidEn)**(f+g*h)-aIden

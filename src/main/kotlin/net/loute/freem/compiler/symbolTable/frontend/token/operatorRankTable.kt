@@ -1,4 +1,4 @@
-package net.loute.freem.compiler.symbolTable.front.token
+package net.loute.freem.compiler.symbolTable.frontend.token
 
 /**
  * index: operator rank

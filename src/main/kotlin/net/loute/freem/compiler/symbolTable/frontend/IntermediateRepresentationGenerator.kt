@@ -1,4 +1,4 @@
-package net.loute.freem.compiler.symbolTable.front
+package net.loute.freem.compiler.symbolTable.frontend
 
 object IntermediateRepresentationGenerator {
     class IntermediateRepresentation

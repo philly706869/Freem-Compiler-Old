@@ -1,10 +1,10 @@
-package net.loute.freem.compiler.symbolTable.front.token
+package net.loute.freem.compiler.symbolTable.frontend.token
 
 sealed interface Token {
     interface PolymorphicToken: Token { val lexeme: String }
     data class IDENTIFIER(override val lexeme: String): Token, PolymorphicToken
     data class LITERAL(override val lexeme: String): Token, PolymorphicToken
-    object LINEBREAK: Token
+    object LINEBREAK: Token { override fun toString() = "LINEBREAK" }
 
     enum class Operator(val value: String, isCombineDirectionRight: Boolean = false): Token {
         EQUAL            ( value = "="                                  ),
@@ -125,8 +125,8 @@ sealed interface Token {
         THIS             ,
         SUPER            ,
 
+        PACKAGE          ,
         IMPORT           ,
-        FROM             ,
         AS               ,
 
         OPEN             ,

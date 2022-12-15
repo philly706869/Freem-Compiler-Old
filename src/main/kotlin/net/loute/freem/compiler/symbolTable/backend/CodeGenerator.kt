@@ -1,6 +1,6 @@
-package net.loute.freem.compiler.symbolTable.back
+package net.loute.freem.compiler.symbolTable.backend
 
-import net.loute.freem.compiler.symbolTable.front.IntermediateRepresentationGenerator
+import net.loute.freem.compiler.symbolTable.frontend.IntermediateRepresentationGenerator
 
 object CodeGenerator {
     class AssemblyLanguage

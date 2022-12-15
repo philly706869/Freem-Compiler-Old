@@ -1,20 +1,10 @@
 package temps
 
-import net.loute.freem.compiler.symbolTable.front.Lexer
-import net.loute.freem.compiler.symbolTable.front.Parser
-import net.loute.freem.compiler.symbolTable.front.token.Token
+import net.loute.freem.compiler.symbolTable.frontend.Lexer
 import java.io.File
 
 fun main() {
     val code = File("src/test/resources/sample-code.fr").readText()
-    val tokens = Lexer.lexicalAnalyse(code)
-    val result = Parser.shuntingYardWith(tokens)
-    println(result.map {
-        when (it) {
-            is Token.PolymorphicToken -> it.lexeme
-            is Token.Operator -> it.value
-            else -> it
-        }
-    }.joinToString(" "))
+    val result = Lexer.lexicalAnalyse(code)
+    println(result.joinToString("\n"))
 }
-

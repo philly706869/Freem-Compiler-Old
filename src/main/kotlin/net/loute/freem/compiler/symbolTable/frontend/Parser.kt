@@ -1,11 +1,10 @@
-package net.loute.freem.compiler.symbolTable.front
+package net.loute.freem.compiler.symbolTable.frontend
 
 import net.loute.freem.compiler.FreemCompiler
-import net.loute.freem.compiler.symbolTable.front.token.Token
-import net.loute.freem.compiler.symbolTable.front.token.getRank
-import net.loute.freem.compiler.symbolTable.raiseCompileError
+import net.loute.freem.compiler.symbolTable.frontend.token.Token
+import net.loute.freem.compiler.symbolTable.frontend.token.getRank
+import net.loute.freem.compiler.symbolTable.throwCompileError
 import java.util.*
-import kotlin.collections.ArrayList
 
 //fun String.trimEdge() = substring(1 until length - 1)
 
@@ -31,7 +30,7 @@ object Parser {
                             output.add(pop)
                         }
                     } catch (_: EmptyStackException) {
-                        raiseCompileError("paren does not match") // modify error message later
+                        throwCompileError("paren does not match") // modify error message later
                     }
                 }
                 is Token.Operator -> {
@@ -53,7 +52,7 @@ object Parser {
         }
         while (!operatorStack.isEmpty()) {
             when (val pop = operatorStack.pop()) {
-                Token.Operator.LEFT_PAREN, Token.Operator.RIGHT_PAREN -> raiseCompileError("paren does not match") // modify error message later
+                Token.Operator.LEFT_PAREN, Token.Operator.RIGHT_PAREN -> throwCompileError("paren does not match") // modify error message later
                 else -> output.add(pop)
             }
         }
