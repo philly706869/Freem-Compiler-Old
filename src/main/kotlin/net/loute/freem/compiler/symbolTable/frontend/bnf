@@ -1,3 +1,0 @@
-<expression> ::= <expression> + <term> | <expression> - <term> | <term>
-<term> ::= <term> * <factor> | <term> / <factor> | <factor>
-<factor> ::= number | name | ( <expression> )

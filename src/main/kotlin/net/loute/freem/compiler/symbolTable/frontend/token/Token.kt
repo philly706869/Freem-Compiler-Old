@@ -1,9 +1,44 @@
 package net.loute.freem.compiler.symbolTable.frontend.token
 
 sealed interface Token {
-    interface PolymorphicToken: Token { val lexeme: String }
+    sealed interface PolymorphicToken: Token { val lexeme: String }
     data class IDENTIFIER(override val lexeme: String): Token, PolymorphicToken
-    data class LITERAL(override val lexeme: String): Token, PolymorphicToken
+
+    sealed interface Literal: Token, PolymorphicToken {
+        sealed interface Number: Literal {
+            fun toNumber(): kotlin.Number
+
+            sealed interface Signed: Number
+            sealed interface Unsigned: Number
+            sealed interface Integer: Number
+            sealed interface RealNumber: Number
+
+            sealed interface SignedInteger: Signed, Integer
+            sealed interface SignedRealNumber: Signed, RealNumber
+            sealed interface UnsignedInteger: Unsigned, Integer
+            sealed interface UnsignedRealNumber: Unsigned, RealNumber
+
+            data class BYTE(override val lexeme: String): SignedInteger { override fun toNumber() = lexeme.toByte() }
+            data class SHORT(override val lexeme: String): SignedInteger { override fun toNumber() = lexeme.toShort() }
+            data class INT(override val lexeme: String): SignedInteger { override fun toNumber() = lexeme.toInt() }
+            data class LONG(override val lexeme: String): SignedInteger { override fun toNumber() = lexeme.toLong() }
+            data class FLOAT(override val lexeme: String): SignedRealNumber { override fun toNumber() = lexeme.toFloat() }
+            data class DOUBLE(override val lexeme: String): SignedRealNumber { override fun toNumber() = lexeme.toDouble() }
+
+            data class UBYTE(override val lexeme: String): UnsignedInteger { override fun toNumber() = lexeme.toByte() }
+            data class USHORT(override val lexeme: String): UnsignedInteger { override fun toNumber() = lexeme.toShort() }
+            data class UINT(override val lexeme: String): UnsignedInteger { override fun toNumber() = lexeme.toInt() }
+            data class ULONG(override val lexeme: String): UnsignedInteger { override fun toNumber() = lexeme.toLong() }
+            data class UFLOAT(override val lexeme: String): UnsignedRealNumber { override fun toNumber() = lexeme.toFloat() }
+            data class UDOUBLE(override val lexeme: String): UnsignedRealNumber { override fun toNumber() = lexeme.toDouble()}
+        }
+        sealed interface Text: Literal {
+            data class STRING(override val lexeme: String): Text
+            data class CHAR(override val lexeme: String): Text
+            data class REGEX(override val lexeme: String): Text
+        }
+    }
+
     object LINEBREAK: Token { override fun toString() = "LINEBREAK" }
 
     enum class Operator(val value: String, isCombineDirectionRight: Boolean = false): Token {
