@@ -1,0 +1,9 @@
+<express>::=<or>
+<or>::=<and>('||'<and>)*
+<and>::=<compare>('&&'<compare>)*
+<compare>::=<less>('=='|'!='<less>)*
+<less>::=<add>('<'|'<='|'>'|'>='<add>)*
+<add>::=<mul>('+'|'-'<mul>)*
+<mul>::=<pow>('*'|'/'|'%'<pow>)*
+<pow>::=<factor>('**'<pow>)?
+<factor>::=(<digit>|'('<express>')'|('+'|'-'|'!')<factor>)

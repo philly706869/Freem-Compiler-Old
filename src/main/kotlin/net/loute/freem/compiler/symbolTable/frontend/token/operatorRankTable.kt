@@ -1,41 +1,42 @@
 package net.loute.freem.compiler.symbolTable.frontend.token
 
-/**
- * index: operator rank
- */
-private val constOperatorRankTable = setOf<Set<Token.Operator>>(
-    setOf(
+import net.loute.freem.compiler.util.indexMapOf
+
+private val CONST_MAX_RANK = 1
+
+private val constOperatorRankTable = indexMapOf(CONST_MAX_RANK) {
+    commit (
         Token.Operator.D_STAR,
-    ),
-    setOf(
+    )
+    commit(
         Token.Operator.STAR,
         Token.Operator.SLASH,
         Token.Operator.PERCENT,
-    ),
-    setOf(
+    )
+    commit (
         Token.Operator.PLUS,
         Token.Operator.MINUS,
-    ),
-    setOf(
+    )
+    commit(
         Token.Operator.GREATER,
         Token.Operator.LESS,
         Token.Operator.GREATER_EQUAL,
         Token.Operator.LESS_EQUAL,
-    ),
-    setOf(
+    )
+    commit (
         Token.Operator.NOT_EQ,
         Token.Operator.D_EQUAL,
-    ),
-    setOf(
-        Token.Operator.AND,
-    ),
-    setOf(
-        Token.Operator.OR,
-    ),
-    setOf(
-        Token.Operator.LEFT_PAREN,
-    ),
-)
+    )
+    commit (
+        Token.Operator.AND
+    )
+    commit (
+        Token.Operator.OR
+    )
+}
 
-val Token.Operator.Companion.rankTable get() = constOperatorRankTable
-fun Token.Operator.getRank() = Token.Operator.rankTable.run { indexOf(find { it.any { item -> item == this@getRank } }) + 1 }
+private val CONST_MIN_RANK = constOperatorRankTable.toList().last().second
+
+val Token.Operator.rank get() = constOperatorRankTable[this]?:0
+val Token.Operator.Companion.MIN_RANK get() = CONST_MIN_RANK
+val Token.Operator.Companion.MAX_RANK get() = CONST_MAX_RANK

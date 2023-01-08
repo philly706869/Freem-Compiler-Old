@@ -2,12 +2,14 @@ package net.loute.freem.compiler.temps
 
 import net.loute.freem.compiler.symbolTable.frontend.Lexer
 import net.loute.freem.compiler.symbolTable.frontend.Parser
-import net.loute.freem.compiler.symbolTable.frontend.token.Token
 import net.loute.freem.compiler.util.pipe
+import java.util.Scanner
 
 fun main() {
-    (java.io.File("src/test/resources/sample-code.fr").readText() pipe Lexer::lexicalAnalyse)
-        .filter { it != Token.LINEBREAK }
-        .toTypedArray() pipe
-            Parser::parseAnalyse
+    val scanner = Scanner(System.`in`)
+    print("enter an expression > ")
+    val expression = scanner.nextLine()
+    val tokenArray = expression pipe Lexer::lexicalAnalyse
+    print("${tokenArray.joinToString(" ") { it.toString() }} = ")
+    tokenArray pipe Parser::parseAnalyse
 }

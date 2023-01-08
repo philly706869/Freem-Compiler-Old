@@ -1,177 +1,208 @@
 package net.loute.freem.compiler.symbolTable.frontend.token
 
 sealed interface Token {
+    object LINEBREAK: Token
+
     sealed interface PolymorphicToken: Token { val lexeme: String }
-    data class IDENTIFIER(override val lexeme: String): Token, PolymorphicToken
+    data class IDENTIFIER(override val lexeme: String): PolymorphicToken
+    sealed interface Literal: PolymorphicToken {
+        sealed interface Number<T : Comparable<T>>: Literal {
+            fun toNumber(): T
 
-    sealed interface Literal: Token, PolymorphicToken {
-        sealed interface Number: Literal {
-            fun toNumber(): kotlin.Number
+            /**
+             * This interface is for companion objects that implement the Number interface.
+             * */
+            sealed class NumberCompanion<T>(val suffix: String?, instanceCreator: (lexeme: String) -> T) {
+                val suffixRegex = suffix?.let { "$it\$".toRegex(RegexOption.IGNORE_CASE) }
+                val createInstance = instanceCreator
+            }
 
-            sealed interface Signed: Number
-            sealed interface Unsigned: Number
-            sealed interface Integer: Number
-            sealed interface RealNumber: Number
+            data class BYTE (override val lexeme: String): Number<Byte> {
+                companion object: NumberCompanion<BYTE>("b", ::BYTE)
+                override fun toNumber() = lexeme.toByte()
+            }
+            data class SHORT (override val lexeme: String) : Number<Short> {
+                companion object: NumberCompanion<SHORT>("s", ::SHORT)
+                override fun toNumber() = lexeme.toShort()
+            }
+            data class INT (override val lexeme: String) : Number<Int> {
+                companion object: NumberCompanion<INT>(null, ::INT)
+                override fun toNumber() = lexeme.toInt()
+            }
+            data class LONG (override val lexeme: String) : Number<Long> {
+                companion object: NumberCompanion<LONG>("l", ::LONG)
+                override fun toNumber() = lexeme.toLong()
+            }
+            data class FLOAT (override val lexeme: String) : Number<Float> {
+                companion object: NumberCompanion<FLOAT>("f", ::FLOAT)
+                override fun toNumber() = lexeme.toFloat()
+            }
+            data class DOUBLE (override val lexeme: String) : Number<Double> {
+                companion object: NumberCompanion<DOUBLE>(null, ::DOUBLE)
+                override fun toNumber() = lexeme.toDouble()
+            }
 
-            sealed interface SignedInteger: Signed, Integer
-            sealed interface SignedRealNumber: Signed, RealNumber
-            sealed interface UnsignedInteger: Unsigned, Integer
-            sealed interface UnsignedRealNumber: Unsigned, RealNumber
-
-            data class BYTE(override val lexeme: String): SignedInteger { override fun toNumber() = lexeme.toByte() }
-            data class SHORT(override val lexeme: String): SignedInteger { override fun toNumber() = lexeme.toShort() }
-            data class INT(override val lexeme: String): SignedInteger { override fun toNumber() = lexeme.toInt() }
-            data class LONG(override val lexeme: String): SignedInteger { override fun toNumber() = lexeme.toLong() }
-            data class FLOAT(override val lexeme: String): SignedRealNumber { override fun toNumber() = lexeme.toFloat() }
-            data class DOUBLE(override val lexeme: String): SignedRealNumber { override fun toNumber() = lexeme.toDouble() }
-
-            data class UBYTE(override val lexeme: String): UnsignedInteger { override fun toNumber() = lexeme.toByte() }
-            data class USHORT(override val lexeme: String): UnsignedInteger { override fun toNumber() = lexeme.toShort() }
-            data class UINT(override val lexeme: String): UnsignedInteger { override fun toNumber() = lexeme.toInt() }
-            data class ULONG(override val lexeme: String): UnsignedInteger { override fun toNumber() = lexeme.toLong() }
-            data class UFLOAT(override val lexeme: String): UnsignedRealNumber { override fun toNumber() = lexeme.toFloat() }
-            data class UDOUBLE(override val lexeme: String): UnsignedRealNumber { override fun toNumber() = lexeme.toDouble()}
+            data class UBYTE  (override val lexeme: String) : Number<UByte> {
+                companion object: NumberCompanion<UBYTE>("ub", ::UBYTE)
+                override fun toNumber() = lexeme.toUByte()
+            }
+            data class USHORT (override val lexeme: String) : Number<UShort> {
+                companion object: NumberCompanion<USHORT>("us", ::USHORT)
+                override fun toNumber() = lexeme.toUShort()
+            }
+            data class UINT   (override val lexeme: String) : Number<UInt> {
+                companion object: NumberCompanion<UINT>("u", ::UINT)
+                override fun toNumber() = lexeme.toUInt()
+            }
+            data class ULONG  (override val lexeme: String) : Number<ULong> {
+                companion object: NumberCompanion<ULONG>("ul", ::ULONG)
+                override fun toNumber() = lexeme.toULong()
+            }
         }
+
         sealed interface Text: Literal {
-            data class STRING(override val lexeme: String): Text
-            data class CHAR(override val lexeme: String): Text
-            data class REGEX(override val lexeme: String): Text
+            data class STRING (override val lexeme: String) : Text
+            data class CHAR   (override val lexeme: String) : Text
+            data class REGEX  (override val lexeme: String) : Text
         }
     }
 
-    object LINEBREAK: Token { override fun toString() = "LINEBREAK" }
+    enum class Operator(val value: String, val combineDirection: CombineDirection) : Token {
+        EQUAL          ( value = "="  , combineDirection = CombineDirection.LEFT  ),
+        PLUS           ( value = "+"  , combineDirection = CombineDirection.LEFT  ),
+        MINUS          ( value = "-"  , combineDirection = CombineDirection.LEFT  ),
+        STAR           ( value = "*"  , combineDirection = CombineDirection.LEFT  ),
+        SLASH          ( value = "/"  , combineDirection = CombineDirection.LEFT  ),
+        PERCENT        ( value = "%"  , combineDirection = CombineDirection.LEFT  ),
+        NOT            ( value = "!"  , combineDirection = CombineDirection.LEFT  ),
+        PLUS_EQ        ( value = "+=" , combineDirection = CombineDirection.LEFT  ),
+        MINUS_EQ       ( value = "-=" , combineDirection = CombineDirection.LEFT  ),
+        STAR_EQ        ( value = "*=" , combineDirection = CombineDirection.LEFT  ),
+        SLASH_EQ       ( value = "/=" , combineDirection = CombineDirection.LEFT  ),
+        PERCENT_EQ     ( value = "%=" , combineDirection = CombineDirection.LEFT  ),
 
-    enum class Operator(val value: String, isCombineDirectionRight: Boolean = false): Token {
-        EQUAL            ( value = "="                                  ),
-        PLUS             ( value = "+"                                  ),
-        MINUS            ( value = "-"                                  ),
-        STAR             ( value = "*"                                  ),
-        SLASH            ( value = "/"                                  ),
-        PERCENT          ( value = "%"                                  ),
-        NOT              ( value = "!"                                  ),
-        PLUS_EQ          ( value = "+="                                 ),
-        MINUS_EQ         ( value = "-="                                 ),
-        STAR_EQ          ( value = "*="                                 ),
-        SLASH_EQ         ( value = "/="                                 ),
-        PERCENT_EQ       ( value = "%="                                 ),
-        NOT_EQ           ( value = "!="                                 ),
+        D_EQUAL        ( value = "==" , combineDirection = CombineDirection.LEFT  ),
+        NOT_EQ         ( value = "!=" , combineDirection = CombineDirection.LEFT  ),
+        T_EQUAL        ( value = "===", combineDirection = CombineDirection.LEFT  ),
+        NOT_D_EQUAL    ( value = "!==", combineDirection = CombineDirection.LEFT  ),
 
-        D_EQUAL          ( value = "=="                                 ),
-        D_PLUS           ( value = "++"                                 ),
-        D_MINUS          ( value = "--"                                 ),
-        D_STAR           ( value = "**", isCombineDirectionRight = true ),
-        D_NOT            ( value = "!!"                                 ),
+        D_PLUS         ( value = "++" , combineDirection = CombineDirection.LEFT  ),
+        D_MINUS        ( value = "--" , combineDirection = CombineDirection.LEFT  ),
+        D_STAR         ( value = "**" , combineDirection = CombineDirection.RIGHT ),
+        D_NOT          ( value = "!!" , combineDirection = CombineDirection.LEFT  ),
 
-        T_EQUAL          ( value = "==="                                ),
+        LESS           ( value = "<"  , combineDirection = CombineDirection.LEFT  ),
+        GREATER        ( value = ">"  , combineDirection = CombineDirection.LEFT  ),
 
-        LESS             ( value = "<"                                  ),
-        GREATER          ( value = ">"                                  ),
+        LESS_EQUAL     ( value = "<=" , combineDirection = CombineDirection.LEFT  ),
+        GREATER_EQUAL  ( value = ">=" , combineDirection = CombineDirection.LEFT  ),
 
-        LESS_EQUAL       ( value = "<="                                 ),
-        GREATER_EQUAL    ( value = ">="                                 ),
+        AND            ( value = "&&" , combineDirection = CombineDirection.LEFT  ),
+        OR             ( value = "||" , combineDirection = CombineDirection.LEFT  ),
 
-        AND              ( value = "&&"                                 ),
-        OR               ( value = "||"                                 ),
+        LEFT_PAREN     ( value = "("  , combineDirection = CombineDirection.LEFT  ),
+        RIGHT_PAREN    ( value = ")"  , combineDirection = CombineDirection.LEFT  ),
+        LEFT_BRACE     ( value = "{"  , combineDirection = CombineDirection.LEFT  ),
+        RIGHT_BRACE    ( value = "}"  , combineDirection = CombineDirection.LEFT  ),
+        LEFT_BRACKET   ( value = "["  , combineDirection = CombineDirection.LEFT  ),
+        RIGHT_BRACKET  ( value = "]"  , combineDirection = CombineDirection.LEFT  ),
 
-        LEFT_PAREN       ( value = "("                                  ),
-        RIGHT_PAREN      ( value = ")"                                  ),
-        LEFT_BRACE       ( value = "{"                                  ),
-        RIGHT_BRACE      ( value = "}"                                  ),
-        LEFT_BRACKET     ( value = "["                                  ),
-        RIGHT_BRACKET    ( value = "]"                                  ),
+        DOT            ( value = "."  , combineDirection = CombineDirection.LEFT  ),
+        COMMA          ( value = ","  , combineDirection = CombineDirection.LEFT  ),
+        QUESTION_MARK  ( value = "?"  , combineDirection = CombineDirection.LEFT  ),
+        SEMICOLON      ( value = ";"  , combineDirection = CombineDirection.LEFT  ),
+        COLON          ( value = ":"  , combineDirection = CombineDirection.LEFT  ),
+        D_COLON        ( value = "::" , combineDirection = CombineDirection.LEFT  ),
 
-        DOT              ( value = "."                                  ),
-        COMMA            ( value = ","                                  ),
-        QUESTION_MARK    ( value = "?"                                  ),
-        SEMICOLON        ( value = ";"                                  ),
-        COLON            ( value = ":"                                  ),
-        D_COLON          ( value = "::"                                 ),
+        SINGLE_ARROW   ( value = "->" , combineDirection = CombineDirection.LEFT  ),
+        DOUBLE_ARROW   ( value = "=>" , combineDirection = CombineDirection.LEFT  ),
 
-        SINGLE_ARROW     ( value = "->"                                 ),
-        DOUBLE_ARROW     ( value = "=>"                                 ),
+        AT             ( value = "@"  , combineDirection = CombineDirection.LEFT  ),
 
-        AT               ( value = "@"                                  ),
-
-        BIT_AND          ( value = "&"                                  ),
-        BIT_OR           ( value = "|"                                  ),
-        BIT_XOR          ( value = "^"                                  ),
-        BIT_NOT          ( value = "~"                                  ),
-        BIT_LEFT         ( value = "<<"                                 ),
-        BIT_RIGHT        ( value = ">>"                                 ),
+        BIT_AND        ( value = "&"  , combineDirection = CombineDirection.LEFT  ),
+        BIT_OR         ( value = "|"  , combineDirection = CombineDirection.LEFT  ),
+        BIT_XOR        ( value = "^"  , combineDirection = CombineDirection.LEFT  ),
+        BIT_NOT        ( value = "~"  , combineDirection = CombineDirection.LEFT  ),
+        BIT_LEFT       ( value = "<<" , combineDirection = CombineDirection.LEFT  ),
+        BIT_RIGHT      ( value = ">>" , combineDirection = CombineDirection.LEFT  ),
         ;
-        enum class CombineDirection { LEFT, RIGHT }
-        val combineDirection = if (isCombineDirectionRight) CombineDirection.RIGHT else CombineDirection.LEFT
-        companion object { val table = mapOf(*values().map { it.value to it }.toTypedArray()) }
+
+        enum class CombineDirection { LEFT, RIGHT, NONE }
+        companion object { val table = values().associateBy { it.value } }
     }
 
     enum class Keyword: Token {
-        NULL             ,
-        MAIN             ,
+        NULL       ,
+        MAIN       ,
 
-        FOR              ,
-        WHILE            ,
-        DO               ,
+        FOR        ,
+        WHILE      ,
+        DO         ,
 
-        CONST            ,
-        VAL              ,
-        VAR              ,
+        CONST      ,
+        VAL        ,
+        VAR        ,
 
-        VARARG           ,
+        VARARG     ,
 
-        TRUE             ,
-        FALSE            ,
+        TRUE       ,
+        FALSE      ,
 
-        FUNC             ,
-        INLINE           ,
-        INFIX            ,
+        FUNC       ,
+        INLINE     ,
+        INFIX      ,
 
-        IF               ,
-        ELIF             ,
-        ELSE             ,
+        IF         ,
+        ELIF       ,
+        ELSE       ,
 
-        RETURN           ,
-        BREAK            ,
-        CONTINUE         ,
+        RETURN     ,
+        BREAK      ,
+        CONTINUE   ,
 
-        SWITCH           ,
-        WHEN             ,
+        SWITCH     ,
+        WHEN       ,
 
-        IS               ,
-        BY               ,
-        TO               ,
-        SKIP             ,
+        IS         ,
+        BY         ,
+        TO         ,
+        SKIP       ,
 
-        DATA             ,
-        CLASS            ,
-        OBJECT           ,
-        ENUM             ,
-        INTERFACE        ,
-        ABSTRACT         ,
+        DATA       ,
+        CLASS      ,
+        OBJECT     ,
+        ENUM       ,
+        INTERFACE  ,
+        ABSTRACT   ,
 
-        OPERATOR         ,
+        OPERATOR   ,
 
-        PUBLIC           ,
-        PROTECTED        ,
-        DEFAULT          ,
-        PRIVATE          ,
+        PUBLIC     ,
+        PROTECTED  ,
+        DEFAULT    ,
+        PRIVATE    ,
 
-        FINAL            ,
+        FINAL      ,
 
-        THIS             ,
-        SUPER            ,
+        THIS       ,
+        SUPER      ,
 
-        PACKAGE          ,
-        IMPORT           ,
-        AS               ,
+        PACKAGE    ,
+        IMPORT     ,
+        AS         ,
 
-        OPEN             ,
-        OVERRIDE         ,
+        OPEN       ,
+        OVERRIDE   ,
 
-        ANNOTATION       ,
+        ANNOTATION ,
 
-        GET              ,
-        SET              ,
+        GET        ,
+        SET        ,
         ;
-        companion object { val table = mapOf(*values().map { it.name.lowercase() to it }.toTypedArray()) }
+
+        override fun toString() = this.name.lowercase()
+        companion object {
+            val table = values().associateBy { it.name.lowercase() }
+        }
     }
 }
