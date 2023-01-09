@@ -1,5 +1,0 @@
-0000000000000000000000000000000000000000 19b249fe39e91addeeb78e0d864723f85332cbb9 philly706869 <philly706869@gmail.com> 1673269204 +0900	commit (initial): Initial commit
-19b249fe39e91addeeb78e0d864723f85332cbb9 0000000000000000000000000000000000000000 philly706869 <philly706869@gmail.com> 1673269221 +0900	Branch: renamed refs/heads/main to refs/heads/development
-0000000000000000000000000000000000000000 19b249fe39e91addeeb78e0d864723f85332cbb9 philly706869 <philly706869@gmail.com> 1673269221 +0900	Branch: renamed refs/heads/main to refs/heads/development
-19b249fe39e91addeeb78e0d864723f85332cbb9 23df74ca79e40343f133eff34754a5cf9de5dd12 philly706869 <philly706869@gmail.com> 1673269300 +0900	branch: Reset to origin/development
-23df74ca79e40343f133eff34754a5cf9de5dd12 23df74ca79e40343f133eff34754a5cf9de5dd12 philly706869 <philly706869@gmail.com> 1673269300 +0900	checkout: moving from development to development
