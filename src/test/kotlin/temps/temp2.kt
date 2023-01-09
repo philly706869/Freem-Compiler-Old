@@ -6,10 +6,7 @@ import net.loute.freem.compiler.util.pipe
 import java.util.Scanner
 
 fun main() {
-    val scanner = Scanner(System.`in`)
-    print("enter an expression > ")
-    val expression = scanner.nextLine()
-    val tokenArray = expression pipe Lexer::lexicalAnalyse
+    val tokenArray = java.io.File("") pipe Lexer::lexicalAnalyse
     print("${tokenArray.joinToString(" ") { it.toString() }} = ")
     tokenArray pipe Parser::parseAnalyse
 }

@@ -1,32 +1,33 @@
 package net.loute.freem.compiler.symbolTable.frontend.token
 
 sealed interface Token {
-    object LINEBREAK: Token
+    val lexeme: String
+    
+    object LINEBREAK: Token { override val lexeme = "\n" }
 
-    sealed interface PolymorphicToken: Token { val lexeme: String }
-    data class IDENTIFIER(override val lexeme: String): PolymorphicToken
-    sealed interface Literal: PolymorphicToken {
+    data class IDENTIFIER(override val lexeme: String): Token
+    sealed interface Literal: Token {
         sealed interface Number<T : Comparable<T>>: Literal {
             fun toNumber(): T
 
             /**
              * This interface is for companion objects that implement the Number interface.
              * */
-            sealed class NumberCompanion<T>(val suffix: String?, instanceCreator: (lexeme: String) -> T) {
-                val suffixRegex = suffix?.let { "$it\$".toRegex(RegexOption.IGNORE_CASE) }
-                val createInstance = instanceCreator
+            sealed class NumberCompanion<T>(val suffix: String, private val instanceCreator: (lexeme: String) -> T) {
+                val suffixRegex = suffix.let { "$it\$".toRegex(RegexOption.IGNORE_CASE) }
+                fun new(lexeme: String) = instanceCreator(lexeme)
             }
 
             data class BYTE (override val lexeme: String): Number<Byte> {
                 companion object: NumberCompanion<BYTE>("b", ::BYTE)
-                override fun toNumber() = lexeme.toByte()
+                override fun toNumber() = lexeme.replace(suffixRegex, "").toByte()
             }
             data class SHORT (override val lexeme: String) : Number<Short> {
                 companion object: NumberCompanion<SHORT>("s", ::SHORT)
                 override fun toNumber() = lexeme.toShort()
             }
             data class INT (override val lexeme: String) : Number<Int> {
-                companion object: NumberCompanion<INT>(null, ::INT)
+                companion object: NumberCompanion<INT>("", ::INT)
                 override fun toNumber() = lexeme.toInt()
             }
             data class LONG (override val lexeme: String) : Number<Long> {
@@ -38,7 +39,7 @@ sealed interface Token {
                 override fun toNumber() = lexeme.toFloat()
             }
             data class DOUBLE (override val lexeme: String) : Number<Double> {
-                companion object: NumberCompanion<DOUBLE>(null, ::DOUBLE)
+                companion object: NumberCompanion<DOUBLE>("", ::DOUBLE)
                 override fun toNumber() = lexeme.toDouble()
             }
 
@@ -67,68 +68,68 @@ sealed interface Token {
         }
     }
 
-    enum class Operator(val value: String, val combineDirection: CombineDirection) : Token {
-        EQUAL          ( value = "="  , combineDirection = CombineDirection.LEFT  ),
-        PLUS           ( value = "+"  , combineDirection = CombineDirection.LEFT  ),
-        MINUS          ( value = "-"  , combineDirection = CombineDirection.LEFT  ),
-        STAR           ( value = "*"  , combineDirection = CombineDirection.LEFT  ),
-        SLASH          ( value = "/"  , combineDirection = CombineDirection.LEFT  ),
-        PERCENT        ( value = "%"  , combineDirection = CombineDirection.LEFT  ),
-        NOT            ( value = "!"  , combineDirection = CombineDirection.LEFT  ),
-        PLUS_EQ        ( value = "+=" , combineDirection = CombineDirection.LEFT  ),
-        MINUS_EQ       ( value = "-=" , combineDirection = CombineDirection.LEFT  ),
-        STAR_EQ        ( value = "*=" , combineDirection = CombineDirection.LEFT  ),
-        SLASH_EQ       ( value = "/=" , combineDirection = CombineDirection.LEFT  ),
-        PERCENT_EQ     ( value = "%=" , combineDirection = CombineDirection.LEFT  ),
+    enum class Operator(override val lexeme: String, val combineDirection: CombineDirection) : Token {
+        EQUAL          ( lexeme = "="  , combineDirection = CombineDirection.LEFT  ),
+        PLUS           ( lexeme = "+"  , combineDirection = CombineDirection.LEFT  ),
+        MINUS          ( lexeme = "-"  , combineDirection = CombineDirection.LEFT  ),
+        STAR           ( lexeme = "*"  , combineDirection = CombineDirection.LEFT  ),
+        SLASH          ( lexeme = "/"  , combineDirection = CombineDirection.LEFT  ),
+        PERCENT        ( lexeme = "%"  , combineDirection = CombineDirection.LEFT  ),
+        NOT            ( lexeme = "!"  , combineDirection = CombineDirection.LEFT  ),
+        PLUS_EQ        ( lexeme = "+=" , combineDirection = CombineDirection.LEFT  ),
+        MINUS_EQ       ( lexeme = "-=" , combineDirection = CombineDirection.LEFT  ),
+        STAR_EQ        ( lexeme = "*=" , combineDirection = CombineDirection.LEFT  ),
+        SLASH_EQ       ( lexeme = "/=" , combineDirection = CombineDirection.LEFT  ),
+        PERCENT_EQ     ( lexeme = "%=" , combineDirection = CombineDirection.LEFT  ),
 
-        D_EQUAL        ( value = "==" , combineDirection = CombineDirection.LEFT  ),
-        NOT_EQ         ( value = "!=" , combineDirection = CombineDirection.LEFT  ),
-        T_EQUAL        ( value = "===", combineDirection = CombineDirection.LEFT  ),
-        NOT_D_EQUAL    ( value = "!==", combineDirection = CombineDirection.LEFT  ),
+        D_EQUAL        ( lexeme = "==" , combineDirection = CombineDirection.LEFT  ),
+        NOT_EQ         ( lexeme = "!=" , combineDirection = CombineDirection.LEFT  ),
+        T_EQUAL        ( lexeme = "===", combineDirection = CombineDirection.LEFT  ),
+        NOT_D_EQUAL    ( lexeme = "!==", combineDirection = CombineDirection.LEFT  ),
 
-        D_PLUS         ( value = "++" , combineDirection = CombineDirection.LEFT  ),
-        D_MINUS        ( value = "--" , combineDirection = CombineDirection.LEFT  ),
-        D_STAR         ( value = "**" , combineDirection = CombineDirection.RIGHT ),
-        D_NOT          ( value = "!!" , combineDirection = CombineDirection.LEFT  ),
+        D_PLUS         ( lexeme = "++" , combineDirection = CombineDirection.LEFT  ),
+        D_MINUS        ( lexeme = "--" , combineDirection = CombineDirection.LEFT  ),
+        D_STAR         ( lexeme = "**" , combineDirection = CombineDirection.RIGHT ),
+        D_NOT          ( lexeme = "!!" , combineDirection = CombineDirection.LEFT  ),
 
-        LESS           ( value = "<"  , combineDirection = CombineDirection.LEFT  ),
-        GREATER        ( value = ">"  , combineDirection = CombineDirection.LEFT  ),
+        LESS           ( lexeme = "<"  , combineDirection = CombineDirection.LEFT  ),
+        GREATER        ( lexeme = ">"  , combineDirection = CombineDirection.LEFT  ),
 
-        LESS_EQUAL     ( value = "<=" , combineDirection = CombineDirection.LEFT  ),
-        GREATER_EQUAL  ( value = ">=" , combineDirection = CombineDirection.LEFT  ),
+        LESS_EQUAL     ( lexeme = "<=" , combineDirection = CombineDirection.LEFT  ),
+        GREATER_EQUAL  ( lexeme = ">=" , combineDirection = CombineDirection.LEFT  ),
 
-        AND            ( value = "&&" , combineDirection = CombineDirection.LEFT  ),
-        OR             ( value = "||" , combineDirection = CombineDirection.LEFT  ),
+        AND            ( lexeme = "&&" , combineDirection = CombineDirection.LEFT  ),
+        OR             ( lexeme = "||" , combineDirection = CombineDirection.LEFT  ),
 
-        LEFT_PAREN     ( value = "("  , combineDirection = CombineDirection.LEFT  ),
-        RIGHT_PAREN    ( value = ")"  , combineDirection = CombineDirection.LEFT  ),
-        LEFT_BRACE     ( value = "{"  , combineDirection = CombineDirection.LEFT  ),
-        RIGHT_BRACE    ( value = "}"  , combineDirection = CombineDirection.LEFT  ),
-        LEFT_BRACKET   ( value = "["  , combineDirection = CombineDirection.LEFT  ),
-        RIGHT_BRACKET  ( value = "]"  , combineDirection = CombineDirection.LEFT  ),
+        LEFT_PAREN     ( lexeme = "("  , combineDirection = CombineDirection.LEFT  ),
+        RIGHT_PAREN    ( lexeme = ")"  , combineDirection = CombineDirection.LEFT  ),
+        LEFT_BRACE     ( lexeme = "{"  , combineDirection = CombineDirection.LEFT  ),
+        RIGHT_BRACE    ( lexeme = "}"  , combineDirection = CombineDirection.LEFT  ),
+        LEFT_BRACKET   ( lexeme = "["  , combineDirection = CombineDirection.LEFT  ),
+        RIGHT_BRACKET  ( lexeme = "]"  , combineDirection = CombineDirection.LEFT  ),
 
-        DOT            ( value = "."  , combineDirection = CombineDirection.LEFT  ),
-        COMMA          ( value = ","  , combineDirection = CombineDirection.LEFT  ),
-        QUESTION_MARK  ( value = "?"  , combineDirection = CombineDirection.LEFT  ),
-        SEMICOLON      ( value = ";"  , combineDirection = CombineDirection.LEFT  ),
-        COLON          ( value = ":"  , combineDirection = CombineDirection.LEFT  ),
-        D_COLON        ( value = "::" , combineDirection = CombineDirection.LEFT  ),
+        DOT            ( lexeme = "."  , combineDirection = CombineDirection.LEFT  ),
+        COMMA          ( lexeme = ","  , combineDirection = CombineDirection.LEFT  ),
+        QUESTION_MARK  ( lexeme = "?"  , combineDirection = CombineDirection.LEFT  ),
+        SEMICOLON      ( lexeme = ";"  , combineDirection = CombineDirection.LEFT  ),
+        COLON          ( lexeme = ":"  , combineDirection = CombineDirection.LEFT  ),
+        D_COLON        ( lexeme = "::" , combineDirection = CombineDirection.LEFT  ),
 
-        SINGLE_ARROW   ( value = "->" , combineDirection = CombineDirection.LEFT  ),
-        DOUBLE_ARROW   ( value = "=>" , combineDirection = CombineDirection.LEFT  ),
+        SINGLE_ARROW   ( lexeme = "->" , combineDirection = CombineDirection.LEFT  ),
+        DOUBLE_ARROW   ( lexeme = "=>" , combineDirection = CombineDirection.LEFT  ),
 
-        AT             ( value = "@"  , combineDirection = CombineDirection.LEFT  ),
+        AT             ( lexeme = "@"  , combineDirection = CombineDirection.LEFT  ),
 
-        BIT_AND        ( value = "&"  , combineDirection = CombineDirection.LEFT  ),
-        BIT_OR         ( value = "|"  , combineDirection = CombineDirection.LEFT  ),
-        BIT_XOR        ( value = "^"  , combineDirection = CombineDirection.LEFT  ),
-        BIT_NOT        ( value = "~"  , combineDirection = CombineDirection.LEFT  ),
-        BIT_LEFT       ( value = "<<" , combineDirection = CombineDirection.LEFT  ),
-        BIT_RIGHT      ( value = ">>" , combineDirection = CombineDirection.LEFT  ),
+        BIT_AND        ( lexeme = "&"  , combineDirection = CombineDirection.LEFT  ),
+        BIT_OR         ( lexeme = "|"  , combineDirection = CombineDirection.LEFT  ),
+        BIT_XOR        ( lexeme = "^"  , combineDirection = CombineDirection.LEFT  ),
+        BIT_NOT        ( lexeme = "~"  , combineDirection = CombineDirection.LEFT  ),
+        BIT_LEFT       ( lexeme = "<<" , combineDirection = CombineDirection.LEFT  ),
+        BIT_RIGHT      ( lexeme = ">>" , combineDirection = CombineDirection.LEFT  ),
         ;
 
         enum class CombineDirection { LEFT, RIGHT, NONE }
-        companion object { val table = values().associateBy { it.value } }
+        companion object { val table = values().associateBy { it.lexeme } }
     }
 
     enum class Keyword: Token {
@@ -199,10 +200,7 @@ sealed interface Token {
         GET        ,
         SET        ,
         ;
-
-        override fun toString() = this.name.lowercase()
-        companion object {
-            val table = values().associateBy { it.name.lowercase() }
-        }
+        override val lexeme = name.lowercase()
+        companion object { val table = values().associateBy { it.name.lowercase() } }
     }
 }

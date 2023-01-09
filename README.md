@@ -1,2 +1,2 @@
-# freem-compiler
-Freem lang compiler repository
+# FreemCompiler
+Freem language compiler repository

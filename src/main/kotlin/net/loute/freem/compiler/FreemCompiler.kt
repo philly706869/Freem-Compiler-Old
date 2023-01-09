@@ -1,5 +1,6 @@
 package net.loute.freem.compiler
 
+import net.loute.freem.compiler.symbolTable.CompileException
 import net.loute.freem.compiler.symbolTable.backend.Assembler
 import net.loute.freem.compiler.symbolTable.backend.CodeGenerator
 import net.loute.freem.compiler.symbolTable.backend.Optimizer
@@ -13,37 +14,29 @@ import java.io.File
 import java.nio.charset.Charset
 
 object FreemCompiler {
-    fun compileCode(code: String) =
-        (code pipe Lexer::lexicalAnalyse).apply {
-            forEach {
-                println(
-                    when (it) {
-                        is Token.PolymorphicToken -> {
-                            """
-                        {
-                            type: ${it},
-                            lexeme: "${it.lexeme}",
-                        },
-                        """.trimIndent()
-                        }
-                        else -> {
-                            """
-                        { type: $it },
-                        """.trimIndent()
-                        }
-                    }
+    fun compile(file: File, charset: Charset = Charsets.UTF_8) {
+        try {
+            if (!file.isFile) throw CompileException("file does not exist")
 
-                )
-            }
-        } pipe
-                Parser::parseAnalyse pipe
-                SemanticAnalyzer::semanticAnalyse pipe
-                IntermediateRepresentationGenerator::generateIntermediateRepresentation pipe
-                CodeGenerator::generateCode pipe
-                Optimizer::optimize pipe
-                Assembler::generateMachineLanguage
-    fun compile(file: File, charset: Charset = Charsets.UTF_8) = compileCode(file.readText(charset))
-    fun compile(path: String) = compile(File(path))
+            Lexer.lexicalAnalyse(file, charset).apply {
+                forEach {
+                    """
+                    {
+                        type: ${it},
+                        lexeme: "${it.lexeme}",
+                    },
+                """.trimIndent() pipe ::println
+                }
+            } pipe
+                    Parser::parseAnalyse pipe
+                    SemanticAnalyzer::semanticAnalyse pipe
+                    IntermediateRepresentationGenerator::generateIntermediateRepresentation pipe
+                    CodeGenerator::generateCode pipe
+                    Optimizer::optimize pipe
+                    Assembler::generateMachineLanguage
+        } catch (e: CompileException) { e.printError() }
+    }
+    fun compile(pathname: String) { compile(File(pathname)) }
 }
 
 

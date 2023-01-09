@@ -1,13 +1,13 @@
 package net.loute.freem.compiler
 
-import net.loute.freem.compiler.symbolTable.CompileException
-
-fun main(args: Array<String>) = compile(args[0])
-
-fun compile(pathName: String) {
+fun main(args: Array<String>) {
     try {
-        FreemCompiler.compile(pathName)
-    } catch (e: CompileException) {
-        println(e.message)
+        FreemCompiler.compile(args[0])
+    } catch (e: IndexOutOfBoundsException) {
+        println(
+            """
+                frc <filepath> <options>
+            """.trimIndent()
+        )
     }
 }

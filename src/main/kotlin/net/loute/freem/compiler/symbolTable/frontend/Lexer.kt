@@ -1,18 +1,10 @@
 package net.loute.freem.compiler.symbolTable.frontend
 
+import net.loute.freem.compiler.symbolTable.CompileException
 import net.loute.freem.compiler.symbolTable.frontend.token.Token
-import net.loute.freem.compiler.symbolTable.throwCompileError
 import net.loute.freem.compiler.util.*
-
-/*
-interface LexerStruct {
-    val SKIP: Array<Regex>
-    val KEYWORD: Array<Pair<String, *>>
-    val IDENTIFIER: Array<Pair<Regex, *>>
-    val OPERATOR: Int
-    val LITERAL: Int
-}
-*/
+import java.io.File
+import java.nio.charset.Charset
 
 private typealias MatchResultTransformer<R> = MatchResult.() -> R
 
@@ -22,13 +14,21 @@ private fun <R: Token> findMatches(string: String, vararg chains: Pair<Regex, Ma
         .firstNotNullOf { (regex, block) -> regex.find(string)?.run(block) }
 
 object Lexer {
-    fun lexicalAnalyse(code: String): Array<Token> {
+    fun lexicalAnalyse(file: File, charset: Charset = Charsets.UTF_8): Array<Token> {
+        var code = file.readText(charset)
         val tokenArray = ArrayList<Token>()
         var index = 0
         var line = 1
 
         fun codeSince() = code.substring(index)
 
+        /**
+         * The goal of this function is match regex from (return value of) `codeSince` then
+         * add its length to index
+         * then run callback
+         *
+         * @return whether the regex has matched
+         */
         infix fun Regex.findThen(block: MatchResult.() -> Unit) =
             find(codeSince()).safe {
                 index += value.length
@@ -118,19 +118,25 @@ object Lexer {
 
             // operator
             {
-                Token.Operator.table.toList().sortedWith(compareBy { it.first.length }).reversed().any {
-                    codeSince().startsWith(it.first).then {
-                        index += it.first.length
-                        tokenArray.add(it.second)
-                    }
-                }
+                Token.Operator.table.toList()
+                    .sortedWith(compareBy { it.first.length })
+                    .reversed()
+                    // 이름 지으세요
+                    //
+                    .any {
+                        codeSince().startsWith(it.first).then {
+                            index += it.first.length
+                            tokenArray.add(it.second)
+                        }
+                    } // 안이
+                // 건물 밀고 다시 짓는중인데 그대로 쓸수있는게 오히려
             },
         )
 
         while (index < code.length) {
             if (!runProcessor(processor)) {
                 val column = index - code.lastIndexOf('\n').coerceAtLeast(0) + 1 // expression before `+ 1` is still an index
-                throwCompileError("Unexpected token ${code[index]}(${line}:${column})", "", line, column, index)
+                throw CompileException("Unexpected token ${code[index]}(${line}:${column})", "", line, column, index)
             }
         }
         return tokenArray.toTypedArray()
