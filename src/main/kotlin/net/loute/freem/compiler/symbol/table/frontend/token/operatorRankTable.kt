@@ -1,4 +1,4 @@
-package net.loute.freem.compiler.symbolTable.frontend.token
+package net.loute.freem.compiler.symbol.table.frontend.token
 
 import net.loute.freem.compiler.util.indexMapOf
 

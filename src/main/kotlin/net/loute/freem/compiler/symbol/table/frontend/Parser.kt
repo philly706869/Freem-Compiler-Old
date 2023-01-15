@@ -1,9 +1,8 @@
-package net.loute.freem.compiler.symbolTable.frontend
+package net.loute.freem.compiler.symbol.table.frontend
 
-import net.loute.freem.compiler.symbolTable.frontend.token.MIN_RANK
-import net.loute.freem.compiler.symbolTable.frontend.token.Token
-import net.loute.freem.compiler.symbolTable.frontend.token.rank
-import net.loute.freem.compiler.symbolTable.throwCompileError
+import net.loute.freem.compiler.symbol.table.frontend.token.MIN_RANK
+import net.loute.freem.compiler.symbol.table.frontend.token.Token
+import net.loute.freem.compiler.symbol.table.frontend.token.rank
 import net.loute.freem.compiler.util.pipe
 import net.loute.freem.compiler.util.toDouble
 import kotlin.math.pow

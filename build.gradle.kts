@@ -3,6 +3,13 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 plugins {
     kotlin("jvm") version "1.7.21"
     application
+    id("java")
+    id("edu.sc.seis.launch4j") version "2.5.4"
+}
+
+launch4j {
+    mainClassName = "net.loute.freem.compiler.main.frcKt"
+    icon = "${projectDir}/icons/myApp.ico"
 }
 
 group = "net.loute.freem.compiler"
@@ -25,5 +32,5 @@ tasks.withType<KotlinCompile> {
 }
 
 application {
-    mainClass.set("MainKt")
+    mainClass.set("net.loute.freem.compiler.main.frcKt")
 }

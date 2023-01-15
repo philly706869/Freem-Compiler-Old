@@ -1,6 +1,6 @@
-package net.loute.freem.compiler.symbolTable.frontend
+package net.loute.freem.compiler.symbol.table.frontend
 
-import net.loute.freem.compiler.symbolTable.frontend.token.Token
+import net.loute.freem.compiler.symbol.table.frontend.token.Token
 
 object SemanticAnalyzer {
     class AbstractSyntaxTree: ArrayList<Token>()

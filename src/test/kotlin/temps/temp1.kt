@@ -1,10 +1,9 @@
 package temps
 
-import net.loute.freem.compiler.symbolTable.frontend.Lexer
+import net.loute.freem.compiler.symbol.table.frontend.Lexer
 import java.io.File
 
 fun main() {
-    val code = File("src/test/resources/sample-code.fr").readText()
-    val result = Lexer.lexicalAnalyse(code)
+    val result = Lexer.lexicalAnalyse(File("src/test/resources/sample-code.fr").readText())
     println(result.joinToString("\n"))
 }

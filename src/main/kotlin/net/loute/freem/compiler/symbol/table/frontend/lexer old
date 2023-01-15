@@ -1,10 +1,4 @@
-package net.loute.freem.compiler.symbolTable.frontend
-
-import net.loute.freem.compiler.symbolTable.CompileException
-import net.loute.freem.compiler.symbolTable.frontend.token.Token
-import net.loute.freem.compiler.util.*
-import java.io.File
-import java.nio.charset.Charset
+// this file is old lexer for new lexer
 
 private typealias MatchResultTransformer<R> = MatchResult.() -> R
 
@@ -13,14 +7,8 @@ private fun <R: Token> findMatches(string: String, vararg chains: Pair<Regex, Ma
         .asSequence()
         .firstNotNullOf { (regex, block) -> regex.find(string)?.run(block) }
 
-object Lexer {
-    fun lexicalAnalyse(file: File, charset: Charset = Charsets.UTF_8): Array<Token> {
-        var code = file.readText(charset)
-        val tokenArray = ArrayList<Token>()
-        var index = 0
-        var line = 1
 
-        fun codeSince() = code.substring(index)
+fun codeSince() = code.substring(index)
 
         /**
          * The goal of this function is match regex from (return value of) `codeSince` then
@@ -74,7 +62,8 @@ object Lexer {
         // runs callback sequentially under condition `if there's no item that has matched previously`
         val processor = processorOf(
             // white space, comment
-            { "^(\\s+|//.*|/\\*[\\s\\S]*\\*/)+"         .toRegex() findThen { line += value.count { (it == '\n') }.then { tokenArray.add(Token.LINEBREAK) } } },
+            { "^(\\s+|//.*|/\\*[\\s\\S]*\\*/)+"         .toRegex() findThen { line += value.count { (it == '\n') }.then { tokenArray.add(
+                Token.LINEBREAK) } } },
 
             // keyword, identifier
             { "^[A-Za-z_]\\w*"                          .toRegex() findThen { tokenArray.add(Token.Keyword.table[value]?: Token.IDENTIFIER(value)) } },
@@ -112,9 +101,12 @@ object Lexer {
             },
 
             // text
-            { "^'(\\\\.|[^\\\\])'"                                              .toRegex() findThen { tokenArray.add(Token.Literal.Text.CHAR(value)) } },
-            { "^(\"\"\"(\\\\[\\s\\S]|[^\"\\\\])*\"\"\"|\"(\\\\.|[^\"\\\\])*\")" .toRegex() findThen { tokenArray.add(Token.Literal.Text.STRING(value)) } },
-            { "^/(\\\\.|[^/\\\\])+/[igmuys]*"                                   .toRegex() findThen { tokenArray.add(Token.Literal.Text.REGEX(value)) } },
+            { "^'(\\\\.|[^\\\\])'"                                              .toRegex() findThen { tokenArray.add(
+                Token.Literal.Text.CHAR(value)) } },
+            { "^(\"\"\"(\\\\[\\s\\S]|[^\"\\\\])*\"\"\"|\"(\\\\.|[^\"\\\\])*\")" .toRegex() findThen { tokenArray.add(
+                Token.Literal.Text.STRING(value)) } },
+            { "^/(\\\\.|[^/\\\\])+/[igmuys]*"                                   .toRegex() findThen { tokenArray.add(
+                Token.Literal.Text.REGEX(value)) } },
 
             // operator
             {
@@ -139,6 +131,3 @@ object Lexer {
                 throw CompileException("Unexpected token ${code[index]}(${line}:${column})", "", line, column, index)
             }
         }
-        return tokenArray.toTypedArray()
-    }
-}

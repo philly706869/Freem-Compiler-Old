@@ -1,4 +1,4 @@
-package net.loute.freem.compiler.symbolTable.backend
+package net.loute.freem.compiler.symbol.backend
 
 object Assembler {
     class MachineLanguage
