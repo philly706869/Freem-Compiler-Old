@@ -22,31 +22,44 @@ private fun wordsToTrie(vararg words: String): Trie =
         }
 
 class Trie(val isCompleted: Boolean, vararg children: Pair<Char, Trie>) {
+    constructor(words: Collection<String>): this(*words.toTypedArray())
     constructor(vararg words: String): this(
         words.any { it.isEmpty() },
         *wordsToTrie(*words.also { require(it.isNotEmpty()) }).children.toList().toTypedArray()
     )
-    val children = children.toMap()
+    private val children = children.toMap()
     operator fun contains(char: Char): Boolean = char in children
     operator fun contains(word: String): Boolean =
         word.firstOrNull()?.let {
             it in this && word.drop(1) !in children[it]!!
         } ?: this.isCompleted
     fun containsCompleted(word: String): Boolean =
-        // 아 근데 지금보니까 이거 코드가 너무 조잡한데
         this.isCompleted.not() && word.isNotEmpty() && children[word.first()]?.let { child ->
             val excludeFirst = word.drop(1)
             excludeFirst.isEmpty() && (child.isCompleted || child.containsCompleted(excludeFirst))
         } == true
     operator fun get(char: Char) =
         children[char]
+    operator fun plus(other: Trie): Trie =
+        Trie(
+            this.isCompleted || other.isCompleted,
+            *(other.children + children)
+                .map { (char, child) ->
+                    char to (
+                        // if character is contained in both Tries, combine their values
+                        if (char in other.children) child + other.children[char]!!
+                        else child
+                    )
+                }
+                .toTypedArray()
+        )
     override fun toString() =
         run {
-            val completed =
-                if (this.isCompleted) "completed, "
-                else ""
+            val components = mutableListOf<String>()
+            if (this.isCompleted) components += "completed"
             val childrenJoined = children.map { (k, v) -> "$k=$v" }.joinToString(", ")
-            "Trie{$completed$childrenJoined}"
+            if (childrenJoined.isNotEmpty()) components += childrenJoined
+            "Trie{${components.joinToString(", ")}}"
         }
 }
 

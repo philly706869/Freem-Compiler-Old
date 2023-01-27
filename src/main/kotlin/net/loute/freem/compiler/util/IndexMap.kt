@@ -1,5 +1,7 @@
 package net.loute.freem.compiler.util
 
+class Test: Exception("test")
+
 class ElementDuplicateException(override val message: String?): Exception(message)
 
 interface IndexMap <K>: Map<K, Int>
