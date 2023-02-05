@@ -8,7 +8,7 @@ import net.loute.freem.compiler.symbol.table.frontend.token.Token_
 
 object Parser {
     class SyntaxTree
-    fun parseAnalyse(tokenArray: Array<Token>) = SyntaxTree().apply {
+    fun parseAnalyse(tokenArray: List<Token_>) = SyntaxTree().apply {
 //        object {
 //            val iterator = tokenArray.iterator()
 //            var currentToken = iterator.next()

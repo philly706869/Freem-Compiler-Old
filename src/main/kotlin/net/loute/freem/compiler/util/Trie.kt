@@ -1,33 +1,34 @@
 package net.loute.freem.compiler.util
 
-private fun wordsToTrie(vararg words: String): Trie =
-    words
-        .asSequence()
-        .filter { it.isNotEmpty() }
-        .map {
-            val first = it.first()
-            val rest = it.drop(1)
-            first to rest
-        }
-        .fold(mutableMapOf<Char, MutableList<String>>()) { map, (first, rest) ->
-           if (first in map) map[first]!!.add(rest)
-           else map[first] = mutableListOf(rest)
-           map
-        }
-        .mapValues { (_, rests) ->
-            wordsToTrie(*rests.toTypedArray())
-        }
-        .let { map ->
-            Trie(words.any { it.isEmpty() }, *map.toList().toTypedArray())
-        }
-
-class Trie(val isCompleted: Boolean, vararg children: Pair<Char, Trie>) {
-    constructor(words: Collection<String>): this(*words.toTypedArray())
-    constructor(vararg words: String): this(
-        words.any { it.isEmpty() },
-        *wordsToTrie(*words.also { require(it.isNotEmpty()) }).children.toList().toTypedArray()
+fun Array<out String>.toTrie(): Trie = asSequence().toTrie()
+fun Iterable<String>.toTrie(): Trie = asSequence().toTrie()
+fun Sequence<String>.toTrie(): Trie =
+    Trie(
+        any { it.isEmpty() },
+        filter { it.isNotEmpty() }
+            .map {
+                val first = it.first()
+                val rest = it.drop(1)
+                first to rest
+            }
+            .fold(mutableMapOf<Char, MutableList<String>>()) { map, (first, rest) ->
+                if (first in map) map[first]!!.add(rest)
+                else map[first] = mutableListOf(rest)
+                map
+            }
+            .mapValues { (_, rests) ->
+                rests.toTrie()
+            }
     )
-    private val children = children.toMap()
+
+class Trie(val isCompleted: Boolean, val children: Map<Char, Trie>) {
+    constructor(words: Array<out String>): this(
+        words.any { it.isEmpty() },
+        words.also { require(it.isNotEmpty()) }.asSequence().toTrie().children
+    )
+    constructor(vararg words: String): this(words)
+    constructor(words: Sequence<String>): this(words.toList())
+    constructor(words: Iterable<String>): this(words.toList().toTypedArray())
     operator fun contains(char: Char): Boolean = char in children
     operator fun contains(word: String): Boolean =
         word.firstOrNull()?.let {
@@ -38,12 +39,11 @@ class Trie(val isCompleted: Boolean, vararg children: Pair<Char, Trie>) {
             val excludeFirst = word.drop(1)
             excludeFirst.isEmpty() && (child.isCompleted || child.containsCompleted(excludeFirst))
         } == true
-    operator fun get(char: Char) =
-        children[char]
+    operator fun get(char: Char) = children[char]
     operator fun plus(other: Trie): Trie =
         Trie(
             this.isCompleted || other.isCompleted,
-            *(other.children + children)
+            (other.children + children)
                 .map { (char, child) ->
                     char to (
                         // if character is contained in both Tries, combine their values
@@ -51,7 +51,7 @@ class Trie(val isCompleted: Boolean, vararg children: Pair<Char, Trie>) {
                         else child
                     )
                 }
-                .toTypedArray()
+                .toMap()
         )
     override fun toString() =
         run {
