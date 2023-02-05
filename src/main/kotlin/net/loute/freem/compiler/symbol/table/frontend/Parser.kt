@@ -1,11 +1,8 @@
 package net.loute.freem.compiler.symbol.table.frontend
 
-import net.loute.freem.compiler.symbol.table.frontend.token.MIN_RANK
-import net.loute.freem.compiler.symbol.table.frontend.token.Token
-import net.loute.freem.compiler.symbol.table.frontend.token.rank
-import net.loute.freem.compiler.util.pipe
-import net.loute.freem.compiler.util.toDouble
-import kotlin.math.pow
+// import net.loute.freem.compiler.symbol.table.frontend.token.MIN_RANK
+import net.loute.freem.compiler.symbol.table.frontend.token.Token_
+// import net.loute.freem.compiler.symbol.table.frontend.token.rank
 
 //fun String.trimEdge() = substring(1 until length - 1)
 
