@@ -1,4 +1,4 @@
-package net.loute.freem.compiler.util
+package net.loute.freem.compiler.util.string
 
 data class StringLocation(val index: UInt, val row: UInt, val column: UInt) {
     operator fun plus(string: String) =

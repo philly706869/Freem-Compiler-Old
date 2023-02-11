@@ -1,6 +1,7 @@
 package net.loute.freem.compiler.symbol.table.frontend.token
 
-import net.loute.freem.compiler.util.StringRange
+import net.loute.freem.compiler.util.collection.trieOf
+import net.loute.freem.compiler.util.string.StringRange
 
 sealed interface Token {
     val type: TokenType
@@ -31,7 +32,7 @@ sealed interface Token {
 
 sealed interface TokenType {
     interface Static: TokenType { val staticValue: String }
-    interface Dynamic: TokenType
+    interface Dynamic: TokenType // { val regex: Regex }
     interface Abstract: TokenType
 }
 
@@ -130,6 +131,7 @@ sealed interface TokenTypes {
         ;
         companion object {
             val table = values().associateWith { it.staticValue }
+            val trie = trieOf(*values().map { it.staticValue }.toTypedArray())
         }
     }
 

@@ -1,8 +1,7 @@
 package net.loute.freem.compiler.symbol.table.frontend
 
-import net.loute.freem.compiler.util.StringLocation
-import net.loute.freem.compiler.util.StringRange
-import net.loute.freem.compiler.util.typedNull
+import net.loute.freem.compiler.util.string.StringLocation
+import net.loute.freem.compiler.util.string.StringRange
 
 interface ITokenType {
     val staticValue: String?
@@ -81,7 +80,7 @@ fun process(rule: Rule, ctx: TokenizeContext) =
     rule.items
         .asSequence()
         .map { it.process(ctx) }
-        .fold(typedNull<ProcessResult?>()) { acc, it -> acc ?: it }
+        .fold(null as ProcessResult?) { acc, it -> acc ?: it }
 
 class TokenizeOptions(val defaultTokenType: ITokenType) {
     var createToken: (ITokenType, String, StringRange) -> IToken = { type, value, range ->
