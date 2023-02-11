@@ -35,6 +35,10 @@ sealed interface TokenType {
     interface Abstract: TokenType
 }
 
+//data class TokenTypeSet(set: Set<TokenTypeSet>) {
+//
+//}
+
 sealed interface TokenTypes {
     object EOF: TokenType.Abstract, TokenTypes
     object IDENTIFIER: TokenType.Dynamic, TokenTypes
@@ -100,16 +104,16 @@ sealed interface TokenTypes {
         OR                ( "||"  ),
 
         LEFT_PAREN        ( "("   ),
-        RIGHT_PAREN       ( "))"  ),
-        LEFT_BRACE        ( "){"  ),
-        RIGHT_BRACE       ( ")}"  ),
+        RIGHT_PAREN       ( ")"   ),
+        LEFT_BRACE        ( "{"   ),
+        RIGHT_BRACE       ( "}"   ),
         LEFT_BRACKET      ( "["   ),
-        RIGHT_BRACKET     ( ")]"  ),
+        RIGHT_BRACKET     ( "]"   ),
 
         DOT               ( "."   ),
-        COMMA             ( "),"  ),
+        COMMA             ( ","   ),
         QUESTION_MARK     ( "?"   ),
-        COLON             ( "):"  ),
+        COLON             ( ":"   ),
         D_COLON           ( "::"  ),
 
         SINGLE_ARROW      ( "->"  ),
@@ -125,7 +129,7 @@ sealed interface TokenTypes {
         BIT_RIGHT         ( ">>"  ),
         ;
         companion object {
-            val trie =
+            val table = values().associateWith { it.staticValue }
         }
     }
 

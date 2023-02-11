@@ -1,8 +1,8 @@
 package net.loute.freem.compiler
 
-import net.loute.freem.compiler.symbol.backend.Assembler
-import net.loute.freem.compiler.symbol.backend.CodeGenerator
-import net.loute.freem.compiler.symbol.backend.Optimizer
+import net.loute.freem.compiler.symbol.table.backend.Assembler
+import net.loute.freem.compiler.symbol.table.backend.CodeGenerator
+import net.loute.freem.compiler.symbol.table.backend.Optimizer
 import net.loute.freem.compiler.symbol.table.frontend.*
 import net.loute.freem.compiler.util.pipe
 import java.io.File

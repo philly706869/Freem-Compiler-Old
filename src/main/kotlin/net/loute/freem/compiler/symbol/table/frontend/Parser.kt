@@ -1,14 +1,15 @@
 package net.loute.freem.compiler.symbol.table.frontend
 
+import net.loute.freem.compiler.symbol.table.frontend.token.Token
+
 // import net.loute.freem.compiler.symbol.table.frontend.token.MIN_RANK
-import net.loute.freem.compiler.symbol.table.frontend.token.Token_
 // import net.loute.freem.compiler.symbol.table.frontend.token.rank
 
 //fun String.trimEdge() = substring(1 until length - 1)
 
 object Parser {
     class SyntaxTree
-    fun parseAnalyse(tokenArray: List<Token_>) = SyntaxTree().apply {
+    fun parseAnalyse(tokenArray: List<Token>) = SyntaxTree().apply {
 //        object {
 //            val iterator = tokenArray.iterator()
 //            var currentToken = iterator.next()
