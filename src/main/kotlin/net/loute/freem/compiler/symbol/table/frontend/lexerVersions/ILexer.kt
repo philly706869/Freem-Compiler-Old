@@ -1,6 +1,7 @@
-package net.loute.freem.compiler.symbol.table.frontend
+package net.loute.freem.compiler.symbol.table.frontend.lexerVersions
 
-import net.loute.freem.compiler.util.string.StringLocation
+/*
+import net.loute.freem.compiler.util.location.StringLocation
 import net.loute.freem.compiler.util.string.StringRange
 
 interface ITokenType {
@@ -102,3 +103,4 @@ data class TokenizeContext(val code: String, val startLoc: StringLocation, val o
     fun updated(added: String) =
         TokenizeContext(code.substring(added.length), startLoc + added, options)
 }
+*/

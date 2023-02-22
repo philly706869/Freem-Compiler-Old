@@ -26,3 +26,5 @@ fun UByte.toBoolean(): Boolean = toInt() != 0
 fun UShort.toBoolean(): Boolean = toInt() != 0
 fun UInt.toBoolean(): Boolean = toInt() != 0
 fun ULong.toBoolean(): Boolean = toInt() != 0
+
+fun Char.isAlpha(): Boolean = isLowerCase() || isUpperCase()

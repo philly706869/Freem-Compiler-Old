@@ -1,7 +1,7 @@
 package net.loute.freem.compiler.symbol.table.frontend.token
 
 import net.loute.freem.compiler.util.collection.trieOf
-import net.loute.freem.compiler.util.string.StringRange
+import net.loute.freem.compiler.util.range.StringRange
 
 sealed interface Token {
     val type: TokenType
@@ -61,14 +61,20 @@ sealed interface TokenTypes {
         object ULONG  : Number
 
         sealed interface Text: Literal
-        object STRING : Text
-        object CHAR   : Text
-        object REGEX  : Text
+        object STRING_CONTENT       : Text
+        object STRING_INTERPOLATION : Text
+        object CHAR                 : Text
+        object REGEX                : Text
     }
 
     enum class Separator(override val staticValue: String): TokenType.Static, TokenTypes {
         SEMICOLON(";"  ),
         LINEBREAK("\n" ),
+        ;
+        companion object {
+            val table = Operator.values().associateWith { it.staticValue }
+            val trie = trieOf(*Operator.values().map { it.staticValue }.toTypedArray())
+        }
     }
 
     enum class Operator(override val staticValue: String): TokenType.Static, TokenTypes {
@@ -91,7 +97,7 @@ sealed interface TokenTypes {
         NOT_EQUAL_EQUAL   ( "!==" ),
 
         PLUS_PLUS         ( "++"  ),
-        MIUSE_MINUS       ( "--"  ),
+        MINUS_MINUS       ( "--"  ),
         STAR_STAR         ( "**"  ),
         NOT_NOT           ( "!!"  ),
 
@@ -116,6 +122,8 @@ sealed interface TokenTypes {
         QUESTION_MARK     ( "?"   ),
         COLON             ( ":"   ),
         D_COLON           ( "::"  ),
+
+        DOUBLE_QUOTATION  ( "\""  ),
 
         SINGLE_ARROW      ( "->"  ),
         DOUBLE_ARROW      ( "=>"  ),

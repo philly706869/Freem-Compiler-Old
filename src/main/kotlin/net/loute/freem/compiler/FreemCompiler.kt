@@ -4,6 +4,7 @@ import net.loute.freem.compiler.symbol.table.backend.Assembler
 import net.loute.freem.compiler.symbol.table.backend.CodeGenerator
 import net.loute.freem.compiler.symbol.table.backend.Optimizer
 import net.loute.freem.compiler.symbol.table.frontend.*
+import net.loute.freem.compiler.symbol.table.frontend.lexerVersions.CLexer
 import net.loute.freem.compiler.util.pipe
 import java.io.File
 import java.nio.charset.Charset
@@ -11,7 +12,7 @@ import java.nio.charset.Charset
 object FreemCompiler {
     fun compile(sourceCode: String, pathname: String? = null) {
         try {
-            Lexer(sourceCode, pathname).lexicalAnalyse() pipe
+            CLexer.lexicalAnalyse(sourceCode, pathname) pipe
             Parser::parseAnalyse pipe
             SemanticAnalyzer::semanticAnalyse pipe
             IntermediateRepresentationGenerator::generateIntermediateRepresentation pipe
