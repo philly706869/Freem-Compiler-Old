@@ -2,40 +2,68 @@ package net.loute.freem.compiler.symbol.table.frontend.lexerVersions
 
 import kotlinx.coroutines.*
 import net.loute.freem.compiler.CompileException
+import net.loute.freem.compiler.main.main
 import net.loute.freem.compiler.symbol.table.frontend.token.*
 import net.loute.freem.compiler.util.collection.Trie
 import net.loute.freem.compiler.util.collection.TrieNode
 import net.loute.freem.compiler.util.collection.toTrie
 import net.loute.freem.compiler.util.isAlpha
+import net.loute.freem.compiler.util.pipe
 import net.loute.freem.compiler.util.range.mutableStringRangeOf
+import java.util.NoSuchElementException
 
 object FreemLexer: Lexer(
-    { // identifier
-        matchNext(Char::isAlpha)
+    LexerBuilder()
+        .addDynamic {
+            // identifier
+            if (hasNext()) {
+                if (next().isAlpha().not()) exit()
+                while (hasNext()) {
 
-    },
-    static = static(
-        *TokenTypes.Operator.values(),
-        *TokenTypes.Keyword.values(),
-        *TokenTypes.Separator.values()
-    ),
-    eof = TokenTypes.EOF
+                }
+            } else exit()
+        }
+        .addDynamic {
+            // literal
+
+        }
+        .addDynamic {
+            //
+        }
+        .addStatic(TokenTypes.Separator.values())
+        .addStatic(TokenTypes.Operator.values())
+        .addStatic(TokenTypes.Keyword.values())
+        .setEOF(TokenTypes.EOF)
 )
-
-fun static(vararg staticTokenType: TokenType.Static) = Statics(staticTokenType.asList())
-data class Statics(val staticTokenTypes: List<TokenType.Static>)
 
 private typealias ScannerBlock = suspend Lexer.Scanner.() -> Unit
 
-open class Lexer(vararg scanner: ScannerBlock, static: Statics? = null, private val eof: TokenType.Abstract? = null) {
+class LexerBuilder {
+    val statics: List<TokenType.Static> get() = innerStatics
+    private val innerStatics: MutableList<TokenType.Static> = mutableListOf()
+    val dynamics: List<ScannerBlock> get() = innerDynamics
+    private val innerDynamics: MutableList<ScannerBlock> = mutableListOf()
+    val eof: TokenType.Abstract? get() = innerEof
+    private var innerEof: TokenType.Abstract? = null
+
+    fun addStatic(tokenTypes: Array<out TokenType.Static>): LexerBuilder = this.apply { innerStatics.addAll(tokenTypes) }
+    fun addStatic(tokenTypes: Sequence<TokenType.Static>): LexerBuilder = this.apply { innerStatics.addAll(tokenTypes) }
+    fun addStatic(tokenTypes: Collection<TokenType.Static>): LexerBuilder = this.apply { innerStatics.addAll(tokenTypes) }
+    fun addStatic(vararg tokenTypes: TokenType.Static): LexerBuilder = this.apply { innerStatics.addAll(tokenTypes) }
+    fun addDynamic(scanner: ScannerBlock): LexerBuilder = this.apply { innerDynamics.add(scanner) }
+    fun setEOF(eof: TokenType.Abstract): LexerBuilder = this.apply { innerEof = eof }
+}
+
+open class Lexer(lexerBuilder: LexerBuilder) {
     private val process: List<ScannerBlock>
+    val eof: TokenType.Abstract? = lexerBuilder.eof
 
     init {
-        val process: MutableList<ScannerBlock> = scanner.toMutableList()
+        val process: MutableList<ScannerBlock> = lexerBuilder.dynamics.toMutableList()
 
-        if (static != null) {
-            val staticTrie: Trie = static.staticTokenTypes.map { it.staticValue }.toTrie()
-            val staticMap: Map<String, TokenType.Static> = static.staticTokenTypes.associateBy { it.staticValue }
+        if (lexerBuilder.statics.isNotEmpty() && lexerBuilder.statics.any { it.staticValue.isEmpty() }.not()) {
+            val staticTrie: Trie = lexerBuilder.statics.map { it.staticValue }.toTrie()
+            val staticMap: Map<String, TokenType.Static> = lexerBuilder.statics.associateBy { it.staticValue }
             val staticProcessBlock: ScannerBlock = {
                 var currentTrie: TrieNode = staticTrie
                 while (hasNext()) {
@@ -53,12 +81,12 @@ open class Lexer(vararg scanner: ScannerBlock, static: Statics? = null, private 
     interface Scanner {
         val lexeme: String
         fun commit(tokenType: TokenType)
-        fun commitAll(tokenTypes: Collection<TokenType.Abstract>)
-        fun push(): Nothing
+        fun commitAll(tokenTypes: Array<out TokenType>)
+        fun commitAll(tokenTypes: Sequence<TokenType>)
+        fun commitAll(tokenTypes: Collection<TokenType>)
+        fun commitAll(vararg tokenTypes: TokenType)
         fun exit(): Nothing
         fun error(message: String): Nothing
-        fun matchNext(char: Char)
-        fun matchNext(condition: (Char) -> Boolean)
         fun hasNext(): Boolean
         suspend fun next(): Char
     }
@@ -66,57 +94,76 @@ open class Lexer(vararg scanner: ScannerBlock, static: Statics? = null, private 
     private object Exit: Throwable()
 
     fun lexicalAnalyse(sourceCode: String, pathname: String? = null): List<Token> = lexicalAnalyse(sourceCode.iterator(), pathname)
-    fun lexicalAnalyse(iterator: Iterator<Char>, pathname: String? = null): List<Token> {
+    fun lexicalAnalyse(iterator: CharIterator, pathname: String? = null): List<Token> = runBlocking {
         val tokenList = mutableListOf<Token>()
         val currentRange = mutableStringRangeOf()
 
-        runBlocking {
-            while (iterator.hasNext()) {
-                val next = iterator.next()
-                val jobs = process.map { block ->
-                    launch {
+        var next: Char? = null
+        while (iterator.hasNext()) {
+            val processes = process.map { block ->
+                object {
+                    var exited: Boolean = false
+                    var compileException: CompileException? = null
+                    val committed: MutableList<Token> = mutableListOf()
+                    private val lexemeBuilder = StringBuilder()
+                    fun run(): Job = launch {
                         try {
                             object: Scanner {
-                                override val lexeme: String
-                                    get() = TODO("Not yet implemented")
+                                override val lexeme: String get() = lexemeBuilder.toString()
 
                                 override fun commit(tokenType: TokenType) {
+                                    when (tokenType) {
+                                        is TokenType.Abstract -> Token(tokenType)
+                                        is TokenType.Static -> Token(tokenType, mutableStringRangeOf())
+                                        is TokenType.Dynamic -> Token(tokenType, "", mutableStringRangeOf())
+                                    } pipe committed::add
+                                }
+
+                                override fun commitAll(tokenTypes: Array<out TokenType>) {
                                     TODO("Not yet implemented")
                                 }
 
-                                override fun commitAll(tokenTypes: Collection<TokenType.Abstract>) {
+                                override fun commitAll(tokenTypes: Sequence<TokenType>) {
                                     TODO("Not yet implemented")
                                 }
 
-                                override fun push(): Nothing {
+                                override fun commitAll(tokenTypes: Collection<TokenType>) {
                                     TODO("Not yet implemented")
                                 }
 
+                                override fun commitAll(vararg tokenTypes: TokenType) {
+                                    TODO("Not yet implemented")
+                                }
                                 override fun error(message: String): Nothing = throw CompileException(message)
-                                override fun matchNext(char: Char) {
-                                    TODO("Not yet implemented")
-                                }
-
-                                override fun matchNext(condition: (Char) -> Boolean) {
-                                    TODO("Not yet implemented")
-                                }
-
                                 override fun exit(): Nothing = throw Exit
-                                override fun hasNext(): Boolean = iterator.hasNext()
+                                override fun hasNext(): Boolean = next != null
                                 override suspend fun next(): Char {
                                     yield()
-                                    return TODO("Not yet implemented")
+                                    return next?:throw NoSuchElementException()
                                 }
                             }.block()
-                        } catch (_: Exit) {}
+                        } catch (_: Exit) {
+                            exited = true
+                        } catch (e: CompileException) {
+                            exited = true
+                            compileException = e
+                        }
                     }
                 }
-                joinAll(*jobs.toTypedArray())
             }
+            val jobs = processes.map { it.run() }
+            launch {
+                while (iterator.hasNext()) {
+                    next = iterator.next()
+                    yield()
+                }
+                next = null
+            }
+            joinAll(*jobs.toTypedArray())
         }
 
         if (eof != null) tokenList.add(Token(eof))
 
-        return tokenList
+        return@runBlocking tokenList
     }
 }
