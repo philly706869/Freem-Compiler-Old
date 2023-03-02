@@ -6,11 +6,12 @@ import net.loute.freem.compiler.util.range.StringRange
 sealed interface Token {
     val type: TokenType
     sealed interface InlineToken: Token {
+        override val type: TokenType.InlineTokenType
         val lexeme: String
         val range: StringRange
     }
 
-    data class Abstract(override val type: TokenType): Token
+    data class Abstract(override val type: TokenType.Abstract): Token
     data class Static(
         override val type: TokenType.Static,
         override val range: StringRange,
@@ -31,8 +32,9 @@ sealed interface Token {
 }
 
 sealed interface TokenType {
-    interface Static: TokenType { val staticValue: String }
-    interface Dynamic: TokenType // { val regex: Regex }
+    sealed interface InlineTokenType: TokenType
+    interface Static: InlineTokenType { val staticValue: String }
+    interface Dynamic: InlineTokenType
     interface Abstract: TokenType
 }
 
@@ -45,8 +47,6 @@ sealed interface TokenTypes {
     object IDENTIFIER: TokenType.Dynamic, TokenTypes
 
     sealed interface Literal: TokenType.Dynamic, TokenTypes {
-        object BOOLEAN: Literal
-
         sealed interface Number: Literal
         object BYTE   : Number
         object SHORT  : Number
@@ -145,6 +145,9 @@ sealed interface TokenTypes {
 
     enum class Keyword(override val staticValue: String): TokenType.Static, TokenTypes {
         NULL       ( "null"       ),
+
+        TRUE       ( "true"       ),
+        FALSE      ( "false"      ),
 
         FOR        ( "for"        ),
         WHILE      ( "while"      ),
