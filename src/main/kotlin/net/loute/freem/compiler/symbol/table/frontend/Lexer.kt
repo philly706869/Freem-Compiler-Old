@@ -7,7 +7,8 @@ import net.loute.freem.compiler.util.collection.Trie
 import net.loute.freem.compiler.util.collection.TrieNode
 import net.loute.freem.compiler.util.collection.toTrie
 import net.loute.freem.compiler.util.isAlpha
-import net.loute.freem.compiler.util.pipe
+import net.loute.freem.compiler.util.location.StringLocation
+import net.loute.freem.compiler.util.location.mutableStringLocationOf
 import net.loute.freem.compiler.util.range.mutableStringRangeOf
 
 object FreemLexer: Lexer({
@@ -39,7 +40,7 @@ object FreemLexer: Lexer({
     eof = TokenTypes.EOF
 })
 
-private typealias ScannerBlock = suspend Lexer.Scanner.() -> Unit
+typealias ScannerBlock = suspend Lexer.Scanner.() -> Unit
 
 interface LexerBuilder {
     fun addStatic(tokenTypes: Array<out TokenType.Static>)
@@ -93,21 +94,19 @@ open class Lexer(lexerBuilderBlock: LexerBuilder.() -> Unit) {
 
         fun hasNext(): Boolean
         suspend fun next(): Char
-        suspend fun nextOrNull(): Char?
-        suspend fun nextOrExit(): Char
-
         suspend fun advance(): Char?
+        suspend fun skip()
 
         suspend fun require(char: Char): Char
         suspend fun require(vararg char: Char): Char
         suspend fun require(charRange: CharRange): Char
         suspend fun require(condition: (Char) -> Boolean): Char
 
+        suspend fun recursiveAnalyze(lexer: Lexer) {
+
+        }
+
         fun commit(tokenType: TokenType)
-        fun commitAll(tokenTypes: Array<out TokenType>)
-        fun commitAll(tokenTypes: Sequence<TokenType>)
-        fun commitAll(tokenTypes: Collection<TokenType>)
-        fun commitAll(vararg tokenTypes: TokenType)
     }
 
     private object Exit: Throwable()
@@ -121,10 +120,12 @@ open class Lexer(lexerBuilderBlock: LexerBuilder.() -> Unit) {
         override var compileException: CompileException? = null
         override val committed: MutableList<Token> = mutableListOf()
     }
+    private class CompileError(message: String, pathname: String?, location: StringLocation?): CompileException(message, pathname, location)
 
     fun lexicalAnalyse(sourceCode: String, pathname: String? = null): List<Token> = lexicalAnalyse(sourceCode.iterator(), pathname)
     fun lexicalAnalyse(iterator: CharIterator, pathname: String? = null): List<Token> = runBlocking {
         val tokenList = mutableListOf<Token>()
+        val currentLocation = mutableStringLocationOf()
         val currentRange = mutableStringRangeOf()
 
         var currentChar: Char? = null
@@ -135,19 +136,25 @@ open class Lexer(lexerBuilderBlock: LexerBuilder.() -> Unit) {
 
             override val peek: Char? get() = currentChar
 
-            override fun error(message: String): Nothing = throw CompileException(message)
+            override fun error(message: String): Nothing = throw CompileError(message, pathname, null)
             override fun exit(): Nothing = throw Exit
 
+            private suspend inline fun updateChar() = yield()
+
             override fun hasNext(): Boolean = currentChar != null
+            override suspend fun next(): Char {
+                updateChar()
+                return peek ?: throw NoSuchElementException()
+            }
 
-            override suspend fun next(): Char { yield(); return peek ?: throw NoSuchElementException() }
-            override suspend fun nextOrNull(): Char? { yield(); return peek }
-            override suspend fun nextOrExit(): Char = nextOrNull() ?: exit()
-
-            override suspend fun advance(): Char? {
-                val before = peek
-                yield()
+            override suspend fun advance(): Char {
+                val before = peek ?: throw NoSuchElementException()
+                updateChar()
                 return before
+            }
+
+            override suspend fun skip() {
+
             }
 
             override suspend fun require(char: Char): Char {
@@ -172,27 +179,12 @@ open class Lexer(lexerBuilderBlock: LexerBuilder.() -> Unit) {
             }
 
             override fun commit(tokenType: TokenType) {
-                when (tokenType) {
+                val token = when (tokenType) {
                     is TokenType.Abstract -> Token(tokenType)
                     is TokenType.Static -> Token(tokenType, mutableStringRangeOf())
                     is TokenType.Dynamic -> Token(tokenType, "", mutableStringRangeOf())
-                } pipe processResult.committed::add
-            }
-
-            override fun commitAll(tokenTypes: Array<out TokenType>) {
-                TODO("Not yet implemented")
-            }
-
-            override fun commitAll(tokenTypes: Sequence<TokenType>) {
-                TODO("Not yet implemented")
-            }
-
-            override fun commitAll(tokenTypes: Collection<TokenType>) {
-                TODO("Not yet implemented")
-            }
-
-            override fun commitAll(vararg tokenTypes: TokenType) {
-                TODO("Not yet implemented")
+                }
+                processResult.committed.add(token)
             }
         }
 
@@ -202,7 +194,7 @@ open class Lexer(lexerBuilderBlock: LexerBuilder.() -> Unit) {
                     block()
                 } catch (_: Exit) {
                     processResult.exited = true
-                } catch (compileException: CompileException) {
+                } catch (compileException: CompileError) {
                     processResult.exited = true
                     processResult.compileException = compileException
                 }
@@ -224,13 +216,23 @@ open class Lexer(lexerBuilderBlock: LexerBuilder.() -> Unit) {
                 }
                 val result = awaitAll(*defers.toTypedArray())
 
+                if (result.isEmpty()) throw CompileException("character not expected: $currentChar", pathname, currentLocation)
+
                 val errorCount = result.count { it.compileException != null }
+
+
                 val buffer = result.maxBy { r -> r.committed.filterIsInstance<Token.InlineToken>().sumOf { it.lexeme.length } }
             }
         }
         val updateProcessor = launch {
             while (iterator.hasNext()) {
-                currentChar = iterator.next()
+                val next = iterator.next()
+                currentChar = next
+                if (next == '\n') {
+                    currentLocation.column = 0
+                    currentLocation.row++
+                }
+                currentLocation.index++
                 yield()
             }
             currentChar = null
