@@ -3,244 +3,364 @@ package net.loute.freem.compiler.symbol.table.frontend
 import kotlinx.coroutines.*
 import net.loute.freem.compiler.CompileException
 import net.loute.freem.compiler.symbol.table.frontend.token.*
-import net.loute.freem.compiler.util.collection.Trie
 import net.loute.freem.compiler.util.collection.TrieNode
-import net.loute.freem.compiler.util.collection.toTrie
-import net.loute.freem.compiler.util.isAlpha
 import net.loute.freem.compiler.util.location.StringLocation
 import net.loute.freem.compiler.util.location.mutableStringLocationOf
 import net.loute.freem.compiler.util.range.mutableStringRangeOf
 
-object FreemLexer: Lexer({
-    addDynamic { // identifier
-        require { it.isAlpha() || it == '_' }
-        while (hasNext()) require { it.isAlpha() || it.isDigit() || it == '_' }
-        commit(TokenTypes.IDENTIFIER)
+val freemLexer = Lexer<FToken>(
+    Scanner {
+
+    },
+    Scanner {
+
     }
-    addDynamic { // literal
-        require(Char::isDigit)
-        suspend fun whileDigit() { while (peek?.isDigit() == true) next() }
-        whileDigit()
-        if (peek == '.') {
-            whileDigit()
+)
 
-        }
-        else {
+typealias ScannerContextBlock<T> = suspend ScannerContext<T>.() -> Unit
+interface ScannerContext<T: Token> {
+    val lexeme: String
+    val peek: Char?
 
-        }
-    }
-    addDynamic {
-        //
-    }
-    addStatic(
-        *TokenTypes.Separator.values(),
-        *TokenTypes.Operator.values(),
-        *TokenTypes.Keyword.values()
-    )
-    eof = TokenTypes.EOF
-})
+    fun exit(): Nothing
+    fun error(message: String): Nothing
 
-typealias ScannerBlock = suspend Lexer.Scanner.() -> Unit
+    fun hasNext(): Boolean
+    suspend fun next(): Char
+    suspend fun nextOrNull(): Char?
+    suspend fun advance(): Char?
 
-interface LexerBuilder {
-    fun addStatic(tokenTypes: Array<out TokenType.Static>)
-    fun addStatic(tokenTypes: Sequence<TokenType.Static>)
-    fun addStatic(tokenTypes: Collection<TokenType.Static>)
-    fun addStatic(vararg tokenTypes: TokenType.Static)
-    fun addDynamic(scanner: ScannerBlock)
-    var eof: TokenType.Abstract?
+    suspend fun skip(): Char
+    suspend fun skip(char: Char): Char?
+    suspend fun skip(vararg char: Char): Char?
+    suspend fun skip(condition: (Char) -> Boolean): Char?
+
+    suspend fun require(char: Char): Char
+    suspend fun require(vararg char: Char): Char
+    suspend fun require(condition: (Char) -> Boolean): Char
+
+    fun commit(token: T)
 }
 
-open class Lexer(lexerBuilderBlock: LexerBuilder.() -> Unit) {
-    private val scanners: List<ScannerBlock>
-    private val eof: TokenType.Abstract?
+class Scanner<T: Token>(val scannerContext: ScannerContextBlock<T>)
 
-    init {
-        val lexerBuilder = object: LexerBuilder {
-            val statics: MutableList<TokenType.Static> = mutableListOf()
-            val dynamics: MutableList<ScannerBlock> = mutableListOf()
-            override var eof: TokenType.Abstract? = null
+private object EXIT: Throwable()
 
-            override fun addStatic(tokenTypes: Array<out TokenType.Static>) { statics.addAll(tokenTypes) }
-            override fun addStatic(tokenTypes: Sequence<TokenType.Static>) { statics.addAll(tokenTypes) }
-            override fun addStatic(tokenTypes: Collection<TokenType.Static>) { statics.addAll(tokenTypes) }
-            override fun addStatic(vararg tokenTypes: TokenType.Static) { statics.addAll(tokenTypes) }
-            override fun addDynamic(scanner: ScannerBlock) { dynamics.add(scanner) }
-        }
+private abstract class ImplementedScanner<T: Token>: ScannerContext<T> {
+    val lexemeBuilder = StringBuilder()
+    override val lexeme: String get() = lexemeBuilder.toString()
+    abstract val currLoc: StringLocation
+    abstract val pathname: String?
 
-        val scanners: MutableList<ScannerBlock> = lexerBuilder.dynamics
+    override fun exit(): Nothing = throw EXIT
+    override fun error(message: String): Nothing = throw CompileException(message, pathname, currLoc)
 
-        if (lexerBuilder.statics.isNotEmpty() && lexerBuilder.statics.any { it.staticValue.isEmpty() }.not()) {
-            val staticTrie: Trie = lexerBuilder.statics.map { it.staticValue }.toTrie()
-            val staticMap: Map<String, TokenType.Static> = lexerBuilder.statics.associateBy { it.staticValue }
-            val staticProcessBlock: ScannerBlock = {
-                var currentTrie: TrieNode = staticTrie
-                while (hasNext()) currentTrie = currentTrie[next()]?:exit()
-                commit(staticMap[lexeme]?:exit())
-            }
-            scanners.add(0, staticProcessBlock)
-        }
-
-        this.scanners = scanners
-        this.eof = lexerBuilder.eof
+    override fun hasNext(): Boolean {
+        TODO("Not yet implemented")
     }
 
-    interface Scanner {
-        val lexeme: String
-        val peek: Char?
-
-        fun exit(): Nothing
-        fun error(message: String): Nothing
-
-        fun hasNext(): Boolean
-        suspend fun next(): Char
-        suspend fun advance(): Char?
-        suspend fun skip()
-
-        suspend fun require(char: Char): Char
-        suspend fun require(vararg char: Char): Char
-        suspend fun require(charRange: CharRange): Char
-        suspend fun require(condition: (Char) -> Boolean): Char
-
-        suspend fun recursiveAnalyze(lexer: Lexer) {
-
-        }
-
-        fun commit(tokenType: TokenType)
+    override suspend fun next(): Char {
+        TODO("Not yet implemented")
     }
 
-    private object Exit: Throwable()
-    private interface ProcessResult {
-        val exited: Boolean
-        val compileException: CompileException?
-        val committed: List<Token>
+    override suspend fun nextOrNull(): Char? {
+        TODO("Not yet implemented")
     }
-    private class ProcessResultBuilder: ProcessResult {
-        override var exited: Boolean = false
-        override var compileException: CompileException? = null
-        override val committed: MutableList<Token> = mutableListOf()
+
+    override suspend fun advance(): Char? {
+        TODO("Not yet implemented")
     }
-    private class CompileError(message: String, pathname: String?, location: StringLocation?): CompileException(message, pathname, location)
 
-    fun lexicalAnalyse(sourceCode: String, pathname: String? = null): List<Token> = lexicalAnalyse(sourceCode.iterator(), pathname)
-    fun lexicalAnalyse(iterator: CharIterator, pathname: String? = null): List<Token> = runBlocking {
-        val tokenList = mutableListOf<Token>()
-        val currentLocation = mutableStringLocationOf()
-        val currentRange = mutableStringRangeOf()
+    override suspend fun skip(): Char {
+        TODO("Not yet implemented")
+    }
 
-        var currentChar: Char? = null
-        class ImplementedScanner: Scanner {
-            val lexemeBuilder = StringBuilder()
-            val processResult = ProcessResultBuilder()
-            override val lexeme: String get() = lexemeBuilder.toString()
+    override suspend fun skip(char: Char): Char? {
+        TODO("Not yet implemented")
+    }
 
-            override val peek: Char? get() = currentChar
+    override suspend fun skip(vararg char: Char): Char? {
+        TODO("Not yet implemented")
+    }
 
-            override fun error(message: String): Nothing = throw CompileError(message, pathname, null)
-            override fun exit(): Nothing = throw Exit
+    override suspend fun skip(condition: (Char) -> Boolean): Char? {
+        TODO("Not yet implemented")
+    }
 
-            private suspend inline fun updateChar() = yield()
+    override suspend fun require(char: Char): Char {
+        TODO("Not yet implemented")
+    }
 
-            override fun hasNext(): Boolean = currentChar != null
-            override suspend fun next(): Char {
-                updateChar()
-                return peek ?: throw NoSuchElementException()
-            }
+    override suspend fun require(vararg char: Char): Char {
+        TODO("Not yet implemented")
+    }
 
-            override suspend fun advance(): Char {
-                val before = peek ?: throw NoSuchElementException()
-                updateChar()
-                return before
-            }
+    override suspend fun require(condition: (Char) -> Boolean): Char {
+        TODO("Not yet implemented")
+    }
 
-            override suspend fun skip() {
+    override fun commit(token: T) {
+        TODO("Not yet implemented")
+    }
+}
 
-            }
+class Lexer<T: Token>(private vararg val scanners: Scanner<T>) {
+    fun lexicalAnalyze(sourceCode: String, pathname: String? = null): List<T>
+    = runBlocking {
+        val tokenList = mutableListOf<T>()
+        val currLoc = mutableStringLocationOf()
+        val iterator = sourceCode.iterator()
+        var currChar: Char? = null
 
-            override suspend fun require(char: Char): Char {
-                return if (advance() != char) exit() else char
-            }
-
-            override suspend fun require(vararg char: Char): Char {
-                val nextChar = nextOrExit()
-                return char.find { it == nextChar } ?: exit()
-            }
-
-            override suspend fun require(charRange: CharRange): Char {
-                val nextChar = nextOrExit()
-                if (nextChar !in charRange) exit()
-                return nextChar
-            }
-
-            override suspend fun require(condition: (Char) -> Boolean): Char {
-                val nextChar = nextOrExit()
-                if (condition(nextChar).not()) exit()
-                return nextChar
-            }
-
-            override fun commit(tokenType: TokenType) {
-                val token = when (tokenType) {
-                    is TokenType.Abstract -> Token(tokenType)
-                    is TokenType.Static -> Token(tokenType, mutableStringRangeOf())
-                    is TokenType.Dynamic -> Token(tokenType, "", mutableStringRangeOf())
-                }
-                processResult.committed.add(token)
-            }
-        }
-
-        fun createNewScannerProcess(block: ScannerBlock): Deferred<ProcessResult> = async {
-            with(ImplementedScanner()) {
-                try {
-                    block()
-                } catch (_: Exit) {
-                    processResult.exited = true
-                } catch (compileException: CompileError) {
-                    processResult.exited = true
-                    processResult.compileException = compileException
-                }
-                if (lexemeBuilder.toString().isNotEmpty()) throw IllegalStateException("you must commit left lexeme")
-                processResult
+        fun createNewScannerProcess(block: suspend ImplementedScanner<T>.() -> Unit): Deferred<ProcessResult> = async {
+            with(ImplementedScanner<T>()) {
+                try { block() }
+                catch (_: EXIT) { processResult.exited = true }
+                if (lexeme.isNotEmpty()) throw IllegalStateException("you must commit left lexeme")
+                return@async processResult
             }
         }
 
         val mainProcessor = launch {
             val mainYield = ::yield
+
             yield() // yield to update processor for initializing
+
             while (iterator.hasNext()) {
-                val defers = scanners.map(::createNewScannerProcess) // create scanning processors
-                launch { // currentChar updater
-                    while (currentChar != null && defers.any { it.isActive }) {
+
+                val staticScannerProcess: Deferred<ProcessResult> = createNewScannerProcess {
+                    val lexemeBuilder = StringBuilder()
+                    var currentTrie: TrieNode = staticTrie
+                    while (hasNext()) currentTrie = currentTrie[skip().also(lexemeBuilder::append)]?:exit()
+                    processResult.committed.add(TToken(staticMap[lexemeBuilder.toString()]?:exit(), mutableStringRangeOf()))
+                }
+
+                val defers: List<Deferred<ProcessResult>> = scanners.map(::createNewScannerProcess) // create scanning processors
+
+                launch {
+                    // currentChar updater
+                    while (currChar != null && defers.any { it.isActive }) {
                         mainYield()
                         yield()
                     }
                 }
-                val result = awaitAll(*defers.toTypedArray())
 
-                if (result.isEmpty()) throw CompileException("character not expected: $currentChar", pathname, currentLocation)
+                val result = awaitAll(staticScannerProcess, *defers.toTypedArray())
 
-                val errorCount = result.count { it.compileException != null }
+                val finalCommit = result
+                    .filter { it.exited.not() }
+                    .maxByOrNull { r ->
+                        r.committed.sumOf { it.lexeme.length }
+                    }?.committed
+                    ?: throw CompileException("character not expected: $currChar", pathname, currLoc)
 
-
-                val buffer = result.maxBy { r -> r.committed.filterIsInstance<Token.InlineToken>().sumOf { it.lexeme.length } }
+                tokenList.addAll(finalCommit)
             }
         }
         val updateProcessor = launch {
             while (iterator.hasNext()) {
                 val next = iterator.next()
-                currentChar = next
-                if (next == '\n') {
-                    currentLocation.column = 0
-                    currentLocation.row++
-                }
-                currentLocation.index++
+                currChar = next
+                currLoc.add(next)
                 yield()
             }
-            currentChar = null
+            currChar = null
         }
         joinAll(mainProcessor, updateProcessor)
-
-        if (eof != null) tokenList.add(Token(eof))
 
         return@runBlocking tokenList
     }
 }
+
+//object FreemLexer: Lexer(
+//    {
+//        scanner { while (peek?.isWhitespace() == true) skip() }
+////        scanner { // identifier
+////            require { it.isAlpha() || it == '_' }
+////            while (hasNext()) require { it.isAlpha() || it.isDigit() || it == '_' }
+////            commit(TokenTypes.IDENTIFIER)
+////        }
+////        scanner { // literal
+////            require(Char::isDigit)
+////            suspend fun whileDigit() { while (peek?.isDigit() == true) advance() }
+////            whileDigit()
+////            if (peek == '.') {
+////                whileDigit()
+////
+////            } else {
+////
+////            }
+////        }
+////        scanner {
+////            //
+////        }
+//    },
+//    *TokenTypes.Separator.values(),
+//    *TokenTypes.Operator.values(),
+//    *TokenTypes.Keyword.values()
+//)
+//
+//typealias ScannerBlock = suspend Lexer.Scanner.() -> Unit
+//
+//interface ScannerBuilder { fun scanner(scanner: ScannerBlock) }
+//
+//open class Lexer(dynamicBuilderBlock: ScannerBuilder.() -> Unit, vararg statics: TokenType.Static) {
+//    private val scanners: List<ScannerBlock> = object: ScannerBuilder {
+//        val dynamics: MutableList<ScannerBlock> = mutableListOf()
+//        override fun scanner(scanner: ScannerBlock) { dynamics.add(scanner) }
+//    }.apply(dynamicBuilderBlock).dynamics
+//    private val staticTrie: Trie = statics.map { it.staticValue }.toTrie()
+//    private val staticMap: Map<String, TokenType.Static> = statics.filter { it.staticValue.isNotEmpty() }.associateBy { it.staticValue }
+//
+//    interface Scanner {
+//        val lexeme: String
+//        val peek: Char?
+//
+//        fun exit(): Nothing
+//        fun error(message: String): Nothing
+//
+//        fun hasNext(): Boolean
+//        suspend fun next(): Char
+//        suspend fun nextOrNull(): Char?
+//        suspend fun advance(): Char?
+//
+//        suspend fun skip(): Char
+//        suspend fun skip(char: Char): Char?
+//        suspend fun skip(vararg char: Char): Char?
+//        suspend fun skip(condition: (Char) -> Boolean): Char?
+//
+//        suspend fun require(char: Char): Char
+//        suspend fun require(vararg char: Char): Char
+//        suspend fun require(condition: (Char) -> Boolean): Char
+//
+//        fun commit(tokenType: TokenType.Dynamic)
+//    }
+//
+//    private object Exit: Throwable()
+//    private interface ProcessResult {
+//        val exited: Boolean
+//        val committed: List<Token>
+//    }
+//    private class ProcessResultBuilder: ProcessResult {
+//        override var exited: Boolean = false
+//        override val committed: MutableList<Token> = mutableListOf()
+//    }
+//
+//    open fun lexicalAnalyse(sourceCode: String, pathname: String? = null): List<Token> = runBlocking {
+//        val iterator = sourceCode.iterator()
+//        val tokenList = mutableListOf<Token>()
+//        val currLoc = mutableStringLocationOf()
+//
+//        var currChar: Char? = null
+//        class ImplementedScanner: Scanner {
+//            val lexemeBuilder = StringBuilder()
+//            val processResult = ProcessResultBuilder()
+//            override val lexeme: String get() = lexemeBuilder.toString()
+//
+//            override val peek: Char? get() = currChar
+//
+//            override fun error(message: String): Nothing = throw CompileException(message, pathname, null)
+//            override fun exit(): Nothing = throw Exit
+//
+//            private suspend inline fun updateChar() = yield()
+//
+//            override fun hasNext(): Boolean = currChar != null
+//            override suspend fun next(): Char = nextOrNull() ?: throw NoSuchElementException()
+//            override suspend fun nextOrNull(): Char? {
+//                updateChar()
+//                return peek?.also(lexemeBuilder::append)
+//            }
+//
+//            override suspend fun advance(): Char {
+//                val before = peek ?: throw NoSuchElementException()
+//                nextOrNull()
+//                return before
+//            }
+//
+//            override suspend fun skip(): Char {
+//                if (lexeme.isNotEmpty()) throw IllegalStateException("lexeme is not empty")
+//                val before = peek ?: throw NoSuchElementException()
+//                updateChar()
+//                return before
+//            }
+//            override suspend fun skip(char: Char): Char? = if (peek == char) skip() else null
+//            override suspend fun skip(vararg char: Char): Char? = char.find { it == peek }?.also { skip() }
+//            override suspend fun skip(condition: (Char) -> Boolean): Char? = if (peek != null && condition(peek!!)) skip() else null
+//
+//            override suspend fun require(char: Char): Char = if (advance() != char) exit() else char
+//            override suspend fun require(vararg char: Char): Char {
+//                val nextChar = nextOrNull() ?: exit()
+//                return char.find { it == nextChar } ?: exit()
+//            }
+//            override suspend fun require(condition: (Char) -> Boolean): Char {
+//                val nextChar = nextOrNull() ?: exit()
+//                if (condition(nextChar).not()) exit()
+//                return nextChar
+//            }
+//
+//            override fun commit(tokenType: TokenType.Dynamic) { processResult.committed.add(Token(tokenType, lexeme, mutableStringRangeOf())) }
+//        }
+//
+//        fun createNewScannerProcess(block: suspend ImplementedScanner.() -> Unit): Deferred<ProcessResult> = async {
+//            with(ImplementedScanner()) {
+//                try { block() }
+//                catch (_: Exit) { processResult.exited = true }
+//                if (lexeme.isNotEmpty()) throw IllegalStateException("you must commit left lexeme")
+//                return@async processResult
+//            }
+//        }
+//
+//        val mainProcessor = launch {
+//            val mainYield = ::yield
+//
+//            yield() // yield to update processor for initializing
+//
+//            while (iterator.hasNext()) {
+//
+//                val staticScannerProcess: Deferred<ProcessResult> = createNewScannerProcess {
+//                    val lexemeBuilder = StringBuilder()
+//                    var currentTrie: TrieNode = staticTrie
+//                    while (hasNext()) currentTrie = currentTrie[skip().also(lexemeBuilder::append)]?:exit()
+//                    processResult.committed.add(Token(staticMap[lexemeBuilder.toString()]?:exit(), mutableStringRangeOf()))
+//                }
+//
+//                val defers: List<Deferred<ProcessResult>> = scanners.map(::createNewScannerProcess) // create scanning processors
+//
+//                launch {
+//                    // currentChar updater
+//                    while (currChar != null && defers.any { it.isActive }) {
+//                        mainYield()
+//                        yield()
+//                    }
+//                }
+//
+//                val result = awaitAll(staticScannerProcess, *defers.toTypedArray())
+//
+//                val finalCommit = result
+//                    .filter { it.exited.not() }
+//                    .maxByOrNull { r ->
+//                        r.committed.sumOf { it.lexeme.length }
+//                    }?.committed
+//                    ?: throw CompileException("character not expected: $currChar", pathname, currLoc)
+//
+//                tokenList.addAll(finalCommit)
+//            }
+//        }
+//        val updateProcessor = launch {
+//            while (iterator.hasNext()) {
+//                val next = iterator.next()
+//                currChar = next
+//                if (next == '\n') {
+//                    currLoc.column = 0
+//                    currLoc.row++
+//                }
+//                currLoc.index++
+//                yield()
+//            }
+//            currChar = null
+//        }
+//        joinAll(mainProcessor, updateProcessor)
+//
+//        return@runBlocking tokenList
+//    }
+//}

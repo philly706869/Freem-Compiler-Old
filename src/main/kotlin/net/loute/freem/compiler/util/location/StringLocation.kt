@@ -11,6 +11,9 @@ interface MutableStringLocation: StringLocation, MutableLocation<StringLocation>
     override var column: Int
 
     override fun update(location: StringLocation)
+    fun update(index: Int?, row: Int?, column: Int?)
+    fun add(string: String)
+    fun add(char: Char)
 }
 
 class ImplementedStringLocation(override var index: Int, override var row: Int, override var column: Int) : MutableStringLocation {
@@ -18,6 +21,23 @@ class ImplementedStringLocation(override var index: Int, override var row: Int, 
         index = location.index
         row = location.row
         column = location.column
+    }
+
+    override fun update(index: Int?, row: Int?, column: Int?) {
+        this.index = index?:this.index
+        this.row = row?:this.row
+        this.column = column?:this.column
+    }
+
+    override fun add(string: String) = string.forEach(::add)
+
+    override fun add(char: Char) {
+        if (char == '\n') {
+            row++
+            column = 0
+        }
+        column++
+        index++
     }
 }
 

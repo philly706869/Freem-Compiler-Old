@@ -1,6 +1,6 @@
 package net.loute.freem.compiler.symbol.table.frontend
 
-import net.loute.freem.compiler.symbol.table.frontend.token.Token
+import net.loute.freem.compiler.symbol.table.frontend.token.TToken
 
 // import net.loute.freem.compiler.symbol.table.frontend.token.MIN_RANK
 // import net.loute.freem.compiler.symbol.table.frontend.token.rank
@@ -9,7 +9,7 @@ import net.loute.freem.compiler.symbol.table.frontend.token.Token
 
 object Parser {
     class SyntaxTree
-    fun parseAnalyse(tokenArray: List<Token>) = SyntaxTree().apply {
+    fun parseAnalyse(tokenArray: List<TToken>) = SyntaxTree().apply {
 //        object {
 //            val iterator = tokenArray.iterator()
 //            var currentToken = iterator.next()
