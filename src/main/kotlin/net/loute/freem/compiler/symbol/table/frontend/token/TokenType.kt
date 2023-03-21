@@ -1,40 +1,42 @@
 package net.loute.freem.compiler.symbol.table.frontend.token
 
-interface Token {
+interface Token<T: Token.Type> {
+    val type: T
     val lexeme: String
+    interface Type
 }
 
-sealed interface FToken: Token {
-    data class IDENTIFIER               (override val lexeme: String): FToken
-    data class UNKNOWN                  (override val lexeme: String): FToken
+sealed interface FTokenType: Token.Type {
+    object IDENTIFIER               : FTokenType
+    object UNKNOWN                  : FTokenType
 
-    sealed interface Literal: FToken {
+    sealed interface Literal: FTokenType {
         sealed interface Number : Literal
-        data class BYTE                 (override val lexeme: String) : Number
-        data class SHORT                (override val lexeme: String) : Number
-        data class INT                  (override val lexeme: String) : Number
-        data class LONG                 (override val lexeme: String) : Number
-        data class FLOAT                (override val lexeme: String) : Number
-        data class DOUBLE               (override val lexeme: String) : Number
+        object BYTE                 : Number
+        object SHORT                : Number
+        object INT                  : Number
+        object LONG                 : Number
+        object FLOAT                : Number
+        object DOUBLE               : Number
 
-        data class UBYTE                (override val lexeme: String) : Number
-        data class USHORT               (override val lexeme: String) : Number
-        data class UINT                 (override val lexeme: String) : Number
-        data class ULONG                (override val lexeme: String) : Number
+        object UBYTE                : Number
+        object USHORT               : Number
+        object UINT                 : Number
+        object ULONG                : Number
 
         sealed interface Text : Literal
-        data class STRING_CONTENT       (override val lexeme: String) : Text
-        data class STRING_INTERPOLATION (override val lexeme: String) : Text
-        data class CHAR                 (override val lexeme: String) : Text
-        data class REGEX                (override val lexeme: String) : Text
+        object STRING_CONTENT       : Text
+        object STRING_INTERPOLATION : Text
+        object CHAR                 : Text
+        object REGEX                : Text
     }
 
-    enum class Separator(override val lexeme: String): FToken {
+    enum class Separator(val lexeme: String): FTokenType {
         SEMICOLON         (";"  ),
         LINEBREAK         ("\n" ),
     }
 
-    enum class Operator(override val lexeme: String): FToken {
+    enum class Operator(val lexeme: String): FTokenType {
         EQUAL             ( "="   ),
         PLUS              ( "+"   ),
         MINUS             ( "-"   ),
@@ -93,7 +95,7 @@ sealed interface FToken: Token {
         BIT_RIGHT         ( ">>"  ),
     }
 
-    enum class Keyword(override val lexeme: String): FToken {
+    enum class Keyword(val lexeme: String): FTokenType {
         NULL       ( "null"       ),
 
         FOR        ( "for"        ),

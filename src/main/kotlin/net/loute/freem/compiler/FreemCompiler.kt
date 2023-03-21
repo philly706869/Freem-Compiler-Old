@@ -29,5 +29,3 @@ object FreemCompiler {
     }
     fun compile(pathname: String, charset: Charset = Charsets.UTF_8) { compile(File(pathname), charset) }
 }
-
-

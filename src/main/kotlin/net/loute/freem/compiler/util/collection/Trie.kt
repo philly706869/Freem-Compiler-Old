@@ -47,7 +47,7 @@ interface TrieNode {
     val children: Map<Char, TrieNode>?
     operator fun get(char: Char) = children?.get(char)
 }
-interface MutableTrieNode: TrieNode {
+private interface MutableTrieNode: TrieNode {
     override var isLeaf: Boolean
     override var children: MutableMap<Char, MutableTrieNode>?
 }
