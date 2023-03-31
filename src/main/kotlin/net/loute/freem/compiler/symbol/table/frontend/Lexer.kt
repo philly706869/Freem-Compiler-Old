@@ -1,14 +1,51 @@
 package net.loute.freem.compiler.symbol.table.frontend
 
-import net.loute.freem.compiler.symbol.table.frontend.token.FTokenType
+import net.loute.freem.compiler.util.collection.Tree
 
-open class Flow<C: Flow.Context<*>, R>(val flowContext: C.() -> Unit) {
+interface Flow<C: FlowContext<*>, R> {
+    fun flow(): R
+}
+
+interface FlowContext<T> {
+    interface FlowItem
+    interface Or: FlowItem
+    interface Quantify: FlowItem
+    interface Plus: Quantify
+    interface Star: Quantify
+    interface Optional: Quantify
+    interface Match: FlowItem
+
+    fun expect(flowItem: FlowItem)
+    fun or(vararg flowItem: FlowItem): Or
+    fun quantify(start: Int?, end: Int, vararg flowItem: FlowItem): Quantify
+    fun quantify(start: Int, end: Int?, vararg flowItem: FlowItem): Quantify
+    fun plus(vararg flowItem: FlowItem): Plus
+    fun star(vararg flowItem: FlowItem): Star
+    fun optional(vararg flowItem: FlowItem): Optional
+    fun match(target: T): Match
+    fun match(condition: (T) -> Boolean): Match
+}
+
+open class ListFlow<T>(protected open val context: FlowContext<T>): Flow<FlowContext<T>, List<T>> {
+
+
+    override fun flow(): List<T> {
+        TODO("Not yet implemented")
+    }
+}
+
+open class TreeFlow<T>(protected open val context: FlowContext<T>): Flow<FlowContext<T>, Tree<T>> {
+    override fun flow(): Tree<T> {
+        TODO("Not yet implemented")
+    }
+}
+
+/*open class Flow<C, R>(val flowContext: Context<C>.() -> Unit) {
     fun flow(): R {
-
+        TODO("Not yet implemented")
     }
 
-
-    open class Context<T> {
+    interface Context<T> {
         sealed interface FlowItem {
             val flowItems: Array<out FlowItem>
         }
@@ -16,25 +53,25 @@ open class Flow<C: Flow.Context<*>, R>(val flowContext: C.() -> Unit) {
         class Quantify(val start: Int?, val end: Int?, override val flowItems: Array<out FlowItem>): FlowItem
         class Match(override val flowItems: Array<out FlowItem>): FlowItem
 
-        fun expect(flowItem: FlowItem) {}
-        fun or(vararg flowItem: FlowItem): Or {}
-        fun quantify(start: Int?, end: Int, vararg flowItem: FlowItem): Quantify {}
-        fun quantify(start: Int, end: Int?, vararg flowItem: FlowItem): Quantify {}
-        fun plus(vararg flowItem: FlowItem): Quantify {}
-        fun star(vararg flowItem: FlowItem): Quantify {}
-        fun optional(vararg flowItem: FlowItem): Quantify {}
-        fun match(target: T): Match {}
-        fun match(condition: (T) -> Boolean): Match {}
+        fun expect(flowItem: FlowItem)
+        fun or(vararg flowItem: FlowItem): Or
+        fun quantify(start: Int?, end: Int, vararg flowItem: FlowItem): Quantify
+        fun quantify(start: Int, end: Int?, vararg flowItem: FlowItem): Quantify
+        fun plus(vararg flowItem: FlowItem): Quantify
+        fun star(vararg flowItem: FlowItem): Quantify
+        fun optional(vararg flowItem: FlowItem): Quantify
+        fun match(target: T): Match
+        fun match(condition: (T) -> Boolean): Match
     }
 }
 
-open class StringFlow<C: Flow.Context<Char>>(flowContext: C.() -> Unit): Flow<C, String>(flowContext) {
-    abstract class Context: Flow.Context<Char>() {
-        class Alternation(override val flowItems: Array<out FlowItem>): FlowItem
+open class StringFlow(flowContext: Context.() -> Unit): Flow<Char, String>(flowContext) {
+    abstract class Context: Flow.Context<Char> {
+        class Alternation(override val flowItems: Array<out Flow.Context.FlowItem>): FlowItem
 
         fun alternation(string: String): Alternation {}
     }
-}
+}*/
 
 val testLexer = StringFlow<Flow.Context<Char>> {
     expect(
@@ -42,10 +79,6 @@ val testLexer = StringFlow<Flow.Context<Char>> {
 
         )
     )
-}
-
-val testParser = Flow<Flow.Context<Token<FTokenType>>, Ast> {
-
 }
 
 //object FreemLexer: Lexer<FToken> ({

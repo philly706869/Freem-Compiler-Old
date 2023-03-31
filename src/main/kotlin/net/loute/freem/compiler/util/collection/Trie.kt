@@ -52,7 +52,7 @@ private interface MutableTrieNode: TrieNode {
     override var children: MutableMap<Char, MutableTrieNode>?
 }
 
-class HashTrie: MutableTrie {
+open class HashTrie: MutableTrie {
 
     constructor()
     constructor(elements: Collection<String>) { addAll(elements) }
