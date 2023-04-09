@@ -1,67 +1,61 @@
 package net.loute.freem.compiler.util.collection
 
-interface Tree<T>: TreeNode<T>, Collection<T> {
-
-}
-interface MutableTree<T>: TreeNode<T>, MutableCollection< T> {
-
+interface Tree<T, C>: TreeNode<T, C> {
+    val height: Int
+    val children: C
 }
 
-interface TreeNode<T> {
-    val parent: TreeNode<T>?
-    val children: Map<T, TreeNode<T>>?
-}
-private interface MutableTreeNode<T>: TreeNode<T> {
-    override val parent: MutableTreeNode<T>?
-    override val children: MutableMap<T, MutableTreeNode< T>>?
+interface MutableTree<T, C>: Tree<T, C>, MutableCollection<T> {
+
 }
 
-open class HashTree<T>: MutableTree<T> {
-    override val parent: TreeNode<T>?
-        get() = TODO("Not yet implemented")
-    override val children: Map<T, TreeNode<T>>?
-        get() = TODO("Not yet implemented")
-    override val size: Int
-        get() = TODO("Not yet implemented")
+interface TreeNode<T, C>: Collection<T> {
+    val root: Tree<T, C>
+    val parent: TreeNode<T, C>
+    val depth: Int
 
-    override fun clear() {
-        TODO("Not yet implemented")
-    }
+    fun isRoot(): Boolean
+    fun isLeaf(): Boolean
+    fun isInternal(): Boolean
+}
+interface MutableTreeNode<T, C>: TreeNode<T, C>, MutableCollection<T> {
+    override val root: MutableTree<T, C>
+    override val parent: MutableTreeNode<T, C>
+}
 
-    override fun addAll(elements: Collection<T>): Boolean {
-        TODO("Not yet implemented")
-    }
+interface BTree<T>: BTreeNode<T> {
 
-    override fun add(element: T): Boolean {
-        TODO("Not yet implemented")
-    }
+}
+interface MutableBTree<T>: BTree<T>, MutableTree<T, List<BTreeNode<T>>> {
 
-    override fun isEmpty(): Boolean {
-        TODO("Not yet implemented")
-    }
+}
 
-    override fun iterator(): MutableIterator<T> {
-        TODO("Not yet implemented")
-    }
+interface BTreeNode<T>: TreeNode<T, List<BTreeNode<T>>> {
 
-    override fun retainAll(elements: Collection<T>): Boolean {
-        TODO("Not yet implemented")
-    }
+}
+interface MutableBTreeNode<T>: BTreeNode<T>, MutableTreeNode<T, List<MutableBTreeNode<T>>> {
 
-    override fun removeAll(elements: Collection<T>): Boolean {
-        TODO("Not yet implemented")
-    }
+}
 
-    override fun remove(element: T): Boolean {
-        TODO("Not yet implemented")
-    }
+interface BinaryTree {
 
-    override fun containsAll(elements: Collection<T>): Boolean {
-        TODO("Not yet implemented")
-    }
+}
+interface MutableBinaryTree {
 
-    override fun contains(element: T): Boolean {
-        TODO("Not yet implemented")
-    }
+}
 
+interface BinaryTreeNode {
+
+}
+interface MutableBinaryTreeNode {
+
+}
+
+interface BinaryTreeChildren<T> {
+    val left: T
+    val right: T
+}
+interface MutableBinaryTreeChildren<T>: BinaryTreeChildren<T> {
+    override val left: T
+    override val right: T
 }
