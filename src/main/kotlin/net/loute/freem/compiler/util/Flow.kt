@@ -1,9 +1,5 @@
 package net.loute.freem.compiler.util
 
-import net.loute.freem.compiler.symbol.table.frontend.token.FTokenType
-import net.loute.freem.compiler.symbol.table.frontend.token.Token
-import net.loute.freem.compiler.util.collection.Tree
-
 abstract class Flow<R> {
     abstract fun flow(): R
     //protected abstract fun next()

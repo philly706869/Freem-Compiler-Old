@@ -193,4 +193,4 @@ gradle-app.setting
 # Java heap dump
 *.hprof
 
-# End of https://www.toptal.com/developers/gitignore/api/windows,intellij,kotlin,gradle
+# End of https://www.toptal.com/developers/gitignore/api/windows,intellij,kotlin,gradle!/.idea/discord.xml
