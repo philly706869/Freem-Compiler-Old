@@ -1,4 +1,4 @@
-package net.loute.freem.compiler
+package net.loute.freem.compiler.util
 
 import net.loute.freem.compiler.util.location.StringLocation
 

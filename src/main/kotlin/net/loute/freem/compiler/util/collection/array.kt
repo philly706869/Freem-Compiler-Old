@@ -1,4 +1,4 @@
-package net.loute.freem.compiler.util
+package net.loute.freem.compiler.util.collection
 
 fun <T> Array<T>.hasDuplicate() = size != distinct().count()
 

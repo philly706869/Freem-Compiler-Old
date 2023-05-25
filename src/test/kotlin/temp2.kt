@@ -1,5 +1,5 @@
-import net.loute.freem.compiler.util.collection.mutableTrieOf
-import net.loute.freem.compiler.util.collection.trieOf
+import net.loute.freem.compiler.util.collection.tree.mutableTrieOf
+import net.loute.freem.compiler.util.collection.tree.trieOf
 
 fun main() {
     val trie = trieOf("a", "abc", "bc")

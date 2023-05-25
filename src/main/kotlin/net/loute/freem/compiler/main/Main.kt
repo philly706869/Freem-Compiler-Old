@@ -1,6 +1,6 @@
 //package net.loute.freem.compiler.main
 //
-//import net.loute.freem.compiler.CompileException
+//import net.loute.freem.compiler.util.CompileException
 //
 //fun main(args: Array<String>) {
 //    try {

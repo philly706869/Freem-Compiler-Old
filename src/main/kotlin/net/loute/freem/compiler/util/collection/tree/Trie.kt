@@ -1,4 +1,4 @@
-package net.loute.freem.compiler.util.collection
+package net.loute.freem.compiler.util.collection.tree
 
 import java.io.Serializable
 import java.util.*
