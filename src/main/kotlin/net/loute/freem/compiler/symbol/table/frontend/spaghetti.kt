@@ -31,31 +31,87 @@ fun run() {
 
 }
 
-fun a(block: TextRegexContext.() -> Unit) {}
+fun <T>pattern(patternBlock: PatternContext<T>.() -> Unit): Pattern<T> = TODO()
+fun textPattern(patternBlock: TextPatternContext.() -> Unit): TextPattern = TODO()
 
 fun b() {
-    a {
+    textPattern {
         val space = Char::isWhitespace or '\n'
+        // TODO: space able/least contain comment
         val spaceAble = space.star
-        val spaceMust = space.plus
+        val spaceLeast = space.plus
 
-        val identify = (Char::isAlpha or '_') and (Char::isAlpha or '_' or Char::isDigit).star
+        val alp = Char::isAlpha.toPattern()
+        val dgt = Char::isDigit.toPattern()
+
+        val identifier = pattern {
+            r q (alp or '_')
+            r q (alp or '_' or dgt).star
+        }
+        val digit = pattern {
+            r q dgt
+            r q ( dgt or '_' ).star
+            r q dgt.opt
+        }
+        val real = pattern {
+            r q digit
+            r q '.'
+            r q digit
+        }
+
+        val function = pattern {
+            r q "func"
+            r q spaceLeast
+            r q identifier
+            r q "("
+            r q pattern {
+                // TODO: function param implement
+            }
+            r q ")"
+        }
+
+        //
+        //
+        // main grammar start
+        //
+        //
 
         r q spaceAble
+
+        // package
         r q "package" /*when does not match: maybe package*/
-        r q spaceMust
-        r q (identify and (spaceAble and '.' and spaceAble and identify).star)
-        r q spaceAble
+
+        r q spaceLeast
+
+        // package name
+        r q pattern {
+            r q identifier
+            r q pattern {
+                r q spaceAble
+                r q '.'
+                r q spaceAble
+                r q identifier
+            }.star
+        }
+
+        r q spaceLeast
+
+
     }
 }
 
-interface RegexContext<T> {
+private typealias Require = PatternContext.Require
 
-    val r get() = Require
+interface PatternContext<T> {
 
     object Require
-
+    val r get() = Require
     infix fun Require           .q(pattern: Pattern<T>)
+
+
+
+    fun ((T) -> Boolean)        .toPattern()                    : Pattern<T>
+    fun T                       .toPattern()                    : Pattern<T>
 
 
 
@@ -73,17 +129,17 @@ interface RegexContext<T> {
 
 
 
-    infix fun ((T) -> Boolean)  .and(condition: (T) -> Boolean) : And<T>
-    infix fun ((T) -> Boolean)  .and(pattern: Pattern<T>)       : And<T>
-    infix fun ((T) -> Boolean)  .and(value: T)                  : And<T>
-
-    infix fun Pattern<T>        .and(condition: (T) -> Boolean) : And<T>
-    infix fun Pattern<T>        .and(pattern: Pattern<T>)       : And<T>
-    infix fun Pattern<T>        .and(value: T)                  : And<T>
-
-    infix fun T                 .and(condition: (T) -> Boolean) : And<T>
-    infix fun T                 .and(pattern: Pattern<T>)       : And<T>
-    infix fun T                 .and(value: T)                  : And<T>
+//    infix fun ((T) -> Boolean)  .and(condition: (T) -> Boolean) : And<T>
+//    infix fun ((T) -> Boolean)  .and(pattern: Pattern<T>)       : And<T>
+//    infix fun ((T) -> Boolean)  .and(value: T)                  : And<T>
+//
+//    infix fun Pattern<T>        .and(condition: (T) -> Boolean) : And<T>
+//    infix fun Pattern<T>        .and(pattern: Pattern<T>)       : And<T>
+//    infix fun Pattern<T>        .and(value: T)                  : And<T>
+//
+//    infix fun T                 .and(condition: (T) -> Boolean) : And<T>
+//    infix fun T                 .and(pattern: Pattern<T>)       : And<T>
+//    infix fun T                 .and(value: T)                  : And<T>
 
 
 
@@ -123,13 +179,16 @@ interface Quan<T>               : Pattern<T>
 
 
 
-interface TextRegexContext: RegexContext<Char> {
-    infix fun RegexContext.Require.q(string: String)
-    infix fun RegexContext.Require.q(char: Char)
-    infix fun RegexContext.Require.q(pattern: TextPattern)
+interface TextPatternContext: PatternContext<Char> {
+    fun pattern(patternBlock: TextPatternContext.() -> Unit): TextPattern
+
+    infix fun Require.q(string: String)
+    infix fun Require.q(char: Char)
+    infix fun Require.q(pattern: TextPattern)
 }
 
 interface TextPattern: Pattern<Char>
+
 
 // <s> ::=[\s\n]*
 // <id> ::=[a-zA-Z_]\w*
