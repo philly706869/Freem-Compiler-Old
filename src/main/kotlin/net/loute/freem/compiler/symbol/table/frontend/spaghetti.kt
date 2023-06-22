@@ -1,6 +1,5 @@
 package net.loute.freem.compiler.symbol.table.frontend
 
-import kotlinx.coroutines.processNextEventInCurrentThread
 import java.io.File
 import kotlin.system.measureNanoTime
 
@@ -17,37 +16,61 @@ fun run() {
     val code = File("src/test/resources/sample-code.fr").readText()
     val projectDir = File("src/test/resources/sample-project")
 
-    val sourceFilePaths: List<String> = run {
-        fun flat(dir: File): List<String> {
+    val sourceFiles: List<File> = run {
+        fun flat(dir: File): List<File> {
             return dir.listFiles()?.flatMap {
                 if (it.isDirectory) flat(it)
-                else listOf(it.path)
+                else if (it.path.endsWith(".fr")) listOf(File(it.path))
+                else emptyList()
             } ?: emptyList()
         }
         flat(projectDir)
     }
-    sourceFilePaths.forEach(::println)
+    sourceFiles.forEach(::println)
     println()
 
+    val testFile = File("src/test/resources/sample-code.fr")
+
+    val iterator = testFile.iterator()
+
+
+    println()
+
+//    val packages: List<String>
+//    sourceFiles.forEach {
+//        val buffReader = it.bufferedReader()
+//    }
 
 }
 
-/*
 
- */
+fun File.iterator() = FileIterator(this)
+class FileIterator(file: File): CharIterator() {
+    constructor(pathname: String): this(File(pathname))
 
-fun <T>test/*test*/(t: T): Unit {}
+    private val reader = file.bufferedReader()
+    private var current: Char? = getNext()
 
-/*
+    private fun getNext(): Char? {
+        val read = reader.read()
+        if (read == -1) {
+            reader.close()
+            return null
+        }
+        return read.toChar()
+    }
 
-func <T: Type> identifier(arg: Type) = arg
-func <T: Type> identifier(arg: Type) println(arg)
-func identifier(arg: Type)
+    override fun hasNext(): Boolean = current != null
 
- */
+    override fun nextChar(): Char {
+        val ret = current ?: throw NoSuchElementException()
+        current = getNext()
+        return ret
+    }
+}
 
 
-class FrontEndAnalyzer(private val iterator: Iterator<Char>, val file: File? = null): TextMatcher() {
+class FrontEndAnalyzer(private val iterator: Iterator<Char>, val file: File? = null): TextMatcher(iterator) {
     constructor(iterable: Iterable<Char>, file: File? = null): this(iterable.iterator(), file)
     constructor(string: String, file: File? = null): this(string.iterator(), file)
 
@@ -76,13 +99,21 @@ class FrontEndAnalyzer(private val iterator: Iterator<Char>, val file: File? = n
 
     override val rootPattern = sa and
             "package" and s and packageName and s and
-            ("import" and s and packageName and ((sa and '.' and sa and '*') or (s and "as" and s and identifier)).opt and s).star and
+            ("import" and s and packageName and ((sa and '.' and sa and '*') or (s and "as" and s and identifier)).opt and s).star
 
 }
 
 data class MatcherEvent<T>(val isSucceeded: Boolean, val index: Int, val expected: Pattern<Char>)
 
-abstract class Matcher<T> {
+abstract class Matcher<T>(input: Iterator<T>) {
+    private val iterator: Iterator<T> = input
+
+    constructor(input: Iterable<T>): this(input.iterator())
+    constructor(input: Collection<T>): this(input.iterator())
+    constructor(input: Sequence<T>): this(input.iterator())
+    constructor(input: Array<T>): this(input.iterator())
+
+
 
     protected abstract val rootPattern: Pattern<T>
 
@@ -99,116 +130,121 @@ abstract class Matcher<T> {
 
 
 
-    protected infix fun ((T) -> Boolean).or(condition: (T) -> Boolean): Or<T>   = or(this.toPattern(), condition.toPattern())
-    protected infix fun ((T) -> Boolean).or(pattern: Pattern<T>): Or<T>         = or(this.toPattern(), pattern)
-    protected infix fun ((T) -> Boolean).or(value: T): Or<T>                    = or(this.toPattern(), value.toPattern())
+    protected infix fun ((T) -> Boolean).or(condition: (T) -> Boolean): Or<T>   = Or(this.toPattern(), condition.toPattern())
+    protected infix fun ((T) -> Boolean).or(pattern: Pattern<T>): Or<T>         = Or(this.toPattern(), pattern)
+    protected infix fun ((T) -> Boolean).or(value: T): Or<T>                    = Or(this.toPattern(), value.toPattern())
 
-    protected infix fun Pattern<T>.or(condition: (T) -> Boolean): Or<T>         = or(this, condition.toPattern())
-    protected infix fun Pattern<T>.or(pattern: Pattern<T>): Or<T>               = or(this, pattern)
-    protected infix fun Pattern<T>.or(value: T): Or<T>                          = or(this, value.toPattern())
+    protected infix fun Pattern<T>.or(condition: (T) -> Boolean): Or<T>         = Or(this, condition.toPattern())
+    protected infix fun Pattern<T>.or(pattern: Pattern<T>): Or<T>               = Or(this, pattern)
+    protected infix fun Pattern<T>.or(value: T): Or<T>                          = Or(this, value.toPattern())
 
-    protected infix fun T.or(condition: (T) -> Boolean): Or<T>                  = or(this.toPattern(), condition.toPattern())
-    protected infix fun T.or(pattern: Pattern<T>): Or<T>                        = or(this.toPattern(), pattern)
-    protected infix fun T.or(value: T): Or<T>                                   = or(this.toPattern(), value.toPattern())
+    protected infix fun T.or(condition: (T) -> Boolean): Or<T>                  = Or(this.toPattern(), condition.toPattern())
+    protected infix fun T.or(pattern: Pattern<T>): Or<T>                        = Or(this.toPattern(), pattern)
+    protected infix fun T.or(value: T): Or<T>                                   = Or(this.toPattern(), value.toPattern())
 
-    private fun or(pattern: Pattern<T>, input: Pattern<T>): Or<T> {
+    private fun Or(pattern: Pattern<T>, input: Pattern<T>): Or<T> {
         TODO()
     }
 
-    protected infix fun ((T) -> Boolean).and(condition: (T) -> Boolean): And<T> = and(this.toPattern(), condition.toPattern())
-    protected infix fun ((T) -> Boolean).and(pattern: Pattern<T>): And<T>       = and(this.toPattern(), pattern)
-    protected infix fun ((T) -> Boolean).and(value: T): And<T>                  = and(this.toPattern(), value.toPattern())
+    protected infix fun ((T) -> Boolean).and(condition: (T) -> Boolean): And<T> = And(this.toPattern(), condition.toPattern())
+    protected infix fun ((T) -> Boolean).and(pattern: Pattern<T>): And<T>       = And(this.toPattern(), pattern)
+    protected infix fun ((T) -> Boolean).and(value: T): And<T>                  = And(this.toPattern(), value.toPattern())
 
-    protected infix fun Pattern<T>.and(condition: (T) -> Boolean): And<T>       = and(this, condition.toPattern())
-    protected infix fun Pattern<T>.and(pattern: Pattern<T>): And<T>             = and(this, pattern)
-    protected infix fun Pattern<T>.and(value: T): And<T>                        = and(this, value.toPattern())
+    protected infix fun Pattern<T>.and(condition: (T) -> Boolean): And<T>       = And(this, condition.toPattern())
+    protected infix fun Pattern<T>.and(pattern: Pattern<T>): And<T>             = And(this, pattern)
+    protected infix fun Pattern<T>.and(value: T): And<T>                        = And(this, value.toPattern())
 
-    protected infix fun T.and(condition: (T) -> Boolean): And<T>                = and(this.toPattern(), condition.toPattern())
-    protected infix fun T.and(pattern: Pattern<T>): And<T>                      = and(this.toPattern(), pattern)
-    protected infix fun T.and(value: T): And<T>                                 = and(this.toPattern(), value.toPattern())
+    protected infix fun T.and(condition: (T) -> Boolean): And<T>                = And(this.toPattern(), condition.toPattern())
+    protected infix fun T.and(pattern: Pattern<T>): And<T>                      = And(this.toPattern(), pattern)
+    protected infix fun T.and(value: T): And<T>                                 = And(this.toPattern(), value.toPattern())
 
-    private fun and(pattern: Pattern<T>, input: Pattern<T>): And<T> {
+    private fun And(pattern: Pattern<T>, input: Pattern<T>): And<T> {
         TODO()
     }
 
-    protected val ((T) -> Boolean).plus: Plus<T> get()  = plus(this.toPattern())
-    protected val Pattern<T>.plus: Plus<T> get()        = plus(this)
-    protected val T.plus: Plus<T> get()                 = plus(this.toPattern())
+    protected val ((T) -> Boolean).plus: Plus<T> get()  = Plus(this.toPattern())
+    protected val Pattern<T>.plus: Plus<T> get()        = Plus(this)
+    protected val T.plus: Plus<T> get()                 = Plus(this.toPattern())
 
-    private fun plus(pattern: Pattern<T>): Plus<T> {
+    private fun Plus(pattern: Pattern<T>): Plus<T> {
         TODO()
     }
 
-    protected val ((T) -> Boolean).star: Star<T> get()  = star(this.toPattern())
-    protected val Pattern<T>.star: Star<T> get()        = star(this)
-    protected val T.star: Star<T> get()                 = star(this.toPattern())
+    protected val ((T) -> Boolean).star: Star<T> get()  = Star(this.toPattern())
+    protected val Pattern<T>.star: Star<T> get()        = Star(this)
+    protected val T.star: Star<T> get()                 = Star(this.toPattern())
 
-    private fun star(pattern: Pattern<T>): Star<T> {
+    private fun Star(pattern: Pattern<T>): Star<T> {
         TODO()
     }
 
-    protected val ((T) -> Boolean).opt: Opt<T> get()    = opt(this.toPattern())
-    protected val Pattern<T>.opt: Opt<T> get()          = opt(this)
-    protected val T.opt: Opt<T> get()                   = opt(this.toPattern())
+    protected val ((T) -> Boolean).opt: Opt<T> get()    = Opt(this.toPattern())
+    protected val Pattern<T>.opt: Opt<T> get()          = Opt(this)
+    protected val T.opt: Opt<T> get()                   = Opt(this.toPattern())
 
-    private fun opt(pattern: Pattern<T>): Opt<T> {
+    private fun Opt(pattern: Pattern<T>): Opt<T> {
         TODO()
     }
 
-    protected val ((T) -> Boolean).lazy: Lazy<T> get()  = lazy(this.toPattern())
-    protected val Pattern<T>.lazy: Lazy<T> get()        = lazy(this)
-    protected val T.lazy: Lazy<T> get()                 = lazy(this.toPattern())
+    protected val ((T) -> Boolean).lazy: Lazy<T> get()  = Lazy(this.toPattern())
+    protected val Pattern<T>.lazy: Lazy<T> get()        = Lazy(this)
+    protected val T.lazy: Lazy<T> get()                 = Lazy(this.toPattern())
 
-    private fun lazy(pattern: Pattern<T>): Lazy<T> {
+    private fun Lazy(pattern: Pattern<T>): Lazy<T> {
         TODO()
     }
 
-    protected fun ((T) -> Boolean).quan(min: Int, max: Int): Quan<T>    = quan(this.toPattern(), min, max)
-    protected fun ((T) -> Boolean).quan(min: Int): Quan<T>              = quan(this.toPattern(), min, null)
-    protected fun Pattern<T>.quan(min: Int, max: Int): Quan<T>          = quan(this, min, max)
-    protected fun Pattern<T>.quan(min: Int): Quan<T>                    = quan(this, min, null)
-    protected fun T.quan(min: Int, max: Int): Quan<T>                   = quan(this.toPattern(), min, max)
-    protected fun T.quan(min: Int): Quan<T>                             = quan(this.toPattern(), min, null)
+    protected fun ((T) -> Boolean).quan(min: Int, max: Int): Quan<T>    = Quan(this.toPattern(), min, max)
+    protected fun ((T) -> Boolean).quan(min: Int): Quan<T>              = Quan(this.toPattern(), min, null)
+    protected fun Pattern<T>.quan(min: Int, max: Int): Quan<T>          = Quan(this, min, max)
+    protected fun Pattern<T>.quan(min: Int): Quan<T>                    = Quan(this, min, null)
+    protected fun T.quan(min: Int, max: Int): Quan<T>                   = Quan(this.toPattern(), min, max)
+    protected fun T.quan(min: Int): Quan<T>                             = Quan(this.toPattern(), min, null)
 
-    private fun quan(pattern: Pattern<T>, min: Int, max: Int?): Quan<T> {
+    private fun Quan(pattern: Pattern<T>, min: Int, max: Int?): Quan<T> {
         TODO()
     }
 
-    protected fun ((T) -> Boolean).on(event: String, block: (event: MatcherEvent<T>) -> Unit): Pattern<T>   = on(this.toPattern(), event, block)
-    protected fun Pattern<T>.on(event: String, block: (event: MatcherEvent<T>) -> Unit): Pattern<T>         = on(this, event, block)
-    protected fun T.on(event: String, block: (event: MatcherEvent<T>) -> Unit): Pattern<T>                  = on(this.toPattern(), event, block)
+    protected fun ((T) -> Boolean).on(event: String, block: (event: MatcherEvent<T>) -> Unit): Pattern<T>   = On(this.toPattern(), event, block)
+    protected fun Pattern<T>.on(event: String, block: (event: MatcherEvent<T>) -> Unit): Pattern<T>         = On(this, event, block)
+    protected fun T.on(event: String, block: (event: MatcherEvent<T>) -> Unit): Pattern<T>                  = On(this.toPattern(), event, block)
 
-    private fun on(pattern: Pattern<T>, event: String, block: (event: MatcherEvent<T>) -> Unit): Pattern<T> {
+    private fun On(pattern: Pattern<T>, event: String, block: (event: MatcherEvent<T>) -> Unit): Pattern<T> {
         TODO()
     }
 
 }
 
-abstract class TextMatcher: Matcher<Char>() {
+abstract class TextMatcher(input: Iterator<Char>): Matcher<Char>(input) {
+    constructor(input: Iterable<Char>): this(input.iterator())
+    constructor(input: Collection<Char>): this(input.iterator())
+    constructor(input: Sequence<Char>): this(input.iterator())
+    constructor(input: Array<Char>): this(input.iterator())
+    constructor(input: String): this(input.iterator())
 
     protected fun String.toPattern(): Pattern<Char> = TODO()
 
-    protected infix fun ((Char) -> Boolean).or(value: String): Or<Char>     = or(this.toPattern(), value.toPattern())
-    protected infix fun Pattern<Char>.or(value: String): Or<Char>           = or(this, value.toPattern())
-    protected infix fun Char.or(value: String): Or<Char>                    = or(this.toPattern(), value.toPattern())
-    protected infix fun String.or(condition: (Char) -> Boolean): Or<Char>   = or(this.toPattern(), condition.toPattern())
-    protected infix fun String.or(pattern: Pattern<Char>): Or<Char>         = or(this.toPattern(), pattern)
-    protected infix fun String.or(value: Char): Or<Char>                    = or(this.toPattern(), value.toPattern())
-    protected infix fun String.or(value: String): Or<Char>                  = or(this.toPattern(), value.toPattern())
+    protected infix fun ((Char) -> Boolean).or(value: String): Or<Char>     = Or(toPattern(), value.toPattern())
+    protected infix fun Pattern<Char>.or(value: String): Or<Char>           = Or(this, value.toPattern())
+    protected infix fun Char.or(value: String): Or<Char>                    = Or(toPattern(), value.toPattern())
+    protected infix fun String.or(condition: (Char) -> Boolean): Or<Char>   = Or(toPattern(), condition.toPattern())
+    protected infix fun String.or(pattern: Pattern<Char>): Or<Char>         = Or(toPattern(), pattern)
+    protected infix fun String.or(value: Char): Or<Char>                    = Or(toPattern(), value.toPattern())
+    protected infix fun String.or(value: String): Or<Char>                  = Or(toPattern(), value.toPattern())
 
-    private fun or(pattern: Pattern<Char>, input: Pattern<Char>): Or<Char> {
+    private fun Or(pattern: Pattern<Char>, input: Pattern<Char>): Or<Char> {
         TODO()
     }
 
-    protected infix fun ((Char) -> Boolean).and(value: String): And<Char>   = and(this.toPattern(), value.toPattern())
-    protected infix fun Pattern<Char>.and(value: String): And<Char>         = and(this, value.toPattern())
-    protected infix fun Char.and(value: String): And<Char>                  = and(this.toPattern(), value.toPattern())
-    protected infix fun String.and(condition: (Char) -> Boolean): And<Char> = and(this.toPattern(), condition.toPattern())
-    protected infix fun String.and(pattern: Pattern<Char>): And<Char>       = and(this.toPattern(), pattern)
-    protected infix fun String.and(value: Char): And<Char>                  = and(this.toPattern(), value.toPattern())
-    protected infix fun String.and(value: String): And<Char>                = and(this.toPattern(), value.toPattern())
+    protected infix fun ((Char) -> Boolean).and(value: String): And<Char>   = And(this.toPattern(), value.toPattern())
+    protected infix fun Pattern<Char>.and(value: String): And<Char>         = And(this, value.toPattern())
+    protected infix fun Char.and(value: String): And<Char>                  = And(this.toPattern(), value.toPattern())
+    protected infix fun String.and(condition: (Char) -> Boolean): And<Char> = And(this.toPattern(), condition.toPattern())
+    protected infix fun String.and(pattern: Pattern<Char>): And<Char>       = And(this.toPattern(), pattern)
+    protected infix fun String.and(value: Char): And<Char>                  = And(this.toPattern(), value.toPattern())
+    protected infix fun String.and(value: String): And<Char>                = And(this.toPattern(), value.toPattern())
 
-    private fun and(pattern: Pattern<Char>, input: Pattern<Char>): And<Char> {
+    private fun And(pattern: Pattern<Char>, input: Pattern<Char>): And<Char> {
         TODO()
     }
 
