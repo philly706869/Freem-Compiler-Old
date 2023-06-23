@@ -1,5 +1,5 @@
 plugins {
-    kotlin("jvm") version "1.8.21"
+    kotlin("jvm") version "1.9.0-RC"
 }
 
 group = "net.loute.freem.compiler"
@@ -11,7 +11,7 @@ repositories {
 
 dependencies {
     testImplementation(kotlin("test"))
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.1")
+    implementation("org.json:json:20230618")
 }
 
 tasks.test {

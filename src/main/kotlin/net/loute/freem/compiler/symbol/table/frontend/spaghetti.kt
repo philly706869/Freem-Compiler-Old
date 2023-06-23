@@ -7,14 +7,23 @@ import kotlin.system.measureNanoTime
 // pre implement code
 //
 
-fun main() {
-    val elapsed = measureNanoTime(::run)
-    println("elapsed: ${elapsed / 1_000_000}ms($elapsed)")
-}
+fun main(args:Array<String>)=with(measureNanoTime{run(args)}){println("elapsed: ${this / 1_000_000}ms($this)")}
 
-fun run() {
-    val code = File("src/test/resources/sample-code.fr").readText()
-    val projectDir = File("src/test/resources/sample-project")
+fun run(args: Array<String>) {
+    /*
+    frc
+     */
+
+
+    val commandPrefix = "frc" // cli prefix
+    val compileConfigPath = "./frconfig.json"
+    val targetPath = args[0] // file path that will be compiled
+    val executionPath = System.getProperty("user.dir") // project path
+
+
+    val targetFile = File(targetPath)
+
+
 
     val sourceFiles: List<File> = run {
         fun flat(dir: File): List<File> {
@@ -24,7 +33,7 @@ fun run() {
                 else emptyList()
             } ?: emptyList()
         }
-        flat(projectDir)
+        flat(File(executionPath))
     }
     sourceFiles.forEach(::println)
     println()
@@ -32,6 +41,7 @@ fun run() {
     val testFile = File("src/test/resources/sample-code.fr")
 
     val iterator = testFile.iterator()
+
 
 
     println()
@@ -42,7 +52,6 @@ fun run() {
 //    }
 
 }
-
 
 fun File.iterator() = FileIterator(this)
 class FileIterator(file: File): CharIterator() {
