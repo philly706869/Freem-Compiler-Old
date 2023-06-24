@@ -1,5 +1,6 @@
 package net.loute.freem.compiler.symbol.table.frontend
 
+import org.json.JSONObject
 import java.io.File
 import kotlin.system.measureNanoTime
 
@@ -7,14 +8,10 @@ import kotlin.system.measureNanoTime
 // pre implement code
 //
 
-fun main(args:Array<String>)=with(measureNanoTime{run(args)}){println("elapsed: ${this / 1_000_000}ms($this)")}
+fun main()=with(measureNanoTime(::run)){println("elapsed: ${this / 1_000_000}ms($this)")}
 
-fun run(args: Array<String>) {
-    /*
-    frc
-     */
-
-
+fun run() {
+    val args = System.getenv("PROGRAM_ARGS").split(' ')
     val commandPrefix = "frc" // cli prefix
     val compileConfigPath = "./frconfig.json"
     val targetPath = args[0] // file path that will be compiled
@@ -22,6 +19,13 @@ fun run(args: Array<String>) {
 
 
     val targetFile = File(targetPath)
+    val compileConfigFile = File(compileConfigPath)
+    val configJSONObject: JSONObject? = if (compileConfigFile.isFile) JSONObject(compileConfigFile.readText()) else null
+
+
+
+    val includes = configJSONObject?.getJSONArray("include")?.toList()?: emptyList()
+    val excludes = configJSONObject?.getJSONArray("exclude")?.toList()?: emptyList()
 
 
 
