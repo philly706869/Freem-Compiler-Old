@@ -1,2 +1,1 @@
-# FreemCompiler
-Freem language compiler repository
+[freem](https://github.com/freemlang)
